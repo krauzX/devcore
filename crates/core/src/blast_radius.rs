@@ -31,7 +31,7 @@ impl BlastRadiusAnalyzer {
 
         for file in &files {
             if let Ok(content) = std::fs::read_to_string(file) {
-                let imports = self.extract_imports(&content);
+                let imports = extract_imports(&content);
                 let rel = self.relative_path(file);
                 self.import_graph.insert(rel, imports);
             }
@@ -122,116 +122,6 @@ impl BlastRadiusAnalyzer {
         dependents
     }
 
-    fn extract_imports(&self, content: &str) -> HashSet<String> {
-        let mut imports = HashSet::new();
-
-        for line in content.lines() {
-            let trimmed = line.trim();
-
-            if trimmed.starts_with("import ") || trimmed.starts_with("from ") {
-                if let Some(path) = self.extract_import_path(trimmed) {
-                    imports.insert(path);
-                }
-            }
-
-            if trimmed.starts_with("use ") {
-                if let Some(path) = self.extract_use_path(trimmed) {
-                    imports.insert(path);
-                }
-            }
-
-            if trimmed.starts_with("import ") {
-                if let Some(path) = self.extract_go_import(trimmed) {
-                    imports.insert(path);
-                }
-            }
-
-            if trimmed.starts_with("from ") && trimmed.contains(" import ") {
-                if let Some(path) = self.extract_py_import(trimmed) {
-                    imports.insert(path);
-                }
-            }
-        }
-
-        imports
-    }
-
-    fn extract_import_path(&self, line: &str) -> Option<String> {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() >= 2 {
-            let path = parts[1].trim_matches(|c| c == '\'' || c == '"' || c == '`');
-            if path.starts_with('.') || path.starts_with('/') {
-                return Some(self.normalize_import_path(path));
-            }
-        }
-        None
-    }
-
-    fn extract_use_path(&self, line: &str) -> Option<String> {
-        let rest = line.strip_prefix("use ")?;
-        let path = rest.trim_end_matches(';').trim();
-
-        if let Some(inner) = path.strip_prefix("crate::") {
-            let parts: Vec<&str> = inner.split("::").collect();
-            if !parts.is_empty() && parts[0] != "*" {
-                return Some(parts[0].to_string());
-            }
-        }
-
-        if let Some(inner) = path.strip_prefix("super::") {
-            let parts: Vec<&str> = inner.split("::").collect();
-            if !parts.is_empty() && parts[0] != "*" {
-                return Some(parts[0].to_string());
-            }
-        }
-
-        if let Some(inner) = path.strip_prefix("self::") {
-            let parts: Vec<&str> = inner.split("::").collect();
-            if !parts.is_empty() && parts[0] != "*" {
-                return Some(parts[0].to_string());
-            }
-        }
-
-        None
-    }
-
-    fn extract_go_import(&self, line: &str) -> Option<String> {
-        if line.contains("\"") {
-            let start = line.find('"')? + 1;
-            let end = line.rfind('"')?;
-            if start < end {
-                return Some(line[start..end].to_string());
-            }
-        }
-        None
-    }
-
-    fn extract_py_import(&self, line: &str) -> Option<String> {
-        let rest = line.strip_prefix("from ")?;
-        let parts: Vec<&str> = rest.split(" import ").collect();
-        if !parts.is_empty() {
-            return Some(parts[0].trim().replace('.', "/"));
-        }
-        None
-    }
-
-    fn normalize_import_path(&self, path: &str) -> String {
-        let parts: Vec<&str> = path.split('/').collect();
-        let mut normalized = Vec::new();
-
-        for part in parts {
-            match part {
-                "." | "" => {}
-                ".." => {
-                    normalized.pop();
-                }
-                _ => normalized.push(part),
-            }
-        }
-
-        normalized.join("/")
-    }
-
     fn collect_source_files(&self) -> Result<Vec<PathBuf>> {
         let config = DevCoreConfig::load(&self.root);
         let mut files = Vec::new();
@@ -279,4 +169,114 @@ impl BlastRadiusAnalyzer {
             .to_string_lossy()
             .replace('\\', "/")
     }
+}
+
+fn extract_imports(content: &str) -> HashSet<String> {
+    let mut imports = HashSet::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with("import ") || trimmed.starts_with("from ") {
+            if let Some(path) = extract_import_path(trimmed) {
+                imports.insert(path);
+            }
+        }
+
+        if trimmed.starts_with("use ") {
+            if let Some(path) = extract_use_path(trimmed) {
+                imports.insert(path);
+            }
+        }
+
+        if trimmed.starts_with("import ") {
+            if let Some(path) = extract_go_import(trimmed) {
+                imports.insert(path);
+            }
+        }
+
+        if trimmed.starts_with("from ") && trimmed.contains(" import ") {
+            if let Some(path) = extract_py_import(trimmed) {
+                imports.insert(path);
+            }
+        }
+    }
+
+    imports
+}
+
+fn extract_import_path(line: &str) -> Option<String> {
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.len() >= 2 {
+        let path = parts[1].trim_matches(|c| c == '\'' || c == '"' || c == '`');
+        if path.starts_with('.') || path.starts_with('/') {
+            return Some(normalize_import_path(path));
+        }
+    }
+    None
+}
+
+fn extract_use_path(line: &str) -> Option<String> {
+    let rest = line.strip_prefix("use ")?;
+    let path = rest.trim_end_matches(';').trim();
+
+    if let Some(inner) = path.strip_prefix("crate::") {
+        let parts: Vec<&str> = inner.split("::").collect();
+        if !parts.is_empty() && parts[0] != "*" {
+            return Some(parts[0].to_string());
+        }
+    }
+
+    if let Some(inner) = path.strip_prefix("super::") {
+        let parts: Vec<&str> = inner.split("::").collect();
+        if !parts.is_empty() && parts[0] != "*" {
+            return Some(parts[0].to_string());
+        }
+    }
+
+    if let Some(inner) = path.strip_prefix("self::") {
+        let parts: Vec<&str> = inner.split("::").collect();
+        if !parts.is_empty() && parts[0] != "*" {
+            return Some(parts[0].to_string());
+        }
+    }
+
+    None
+}
+
+fn extract_go_import(line: &str) -> Option<String> {
+    if line.contains('"') {
+        let start = line.find('"')? + 1;
+        let end = line.rfind('"')?;
+        if start < end {
+            return Some(line[start..end].to_string());
+        }
+    }
+    None
+}
+
+fn extract_py_import(line: &str) -> Option<String> {
+    let rest = line.strip_prefix("from ")?;
+    let parts: Vec<&str> = rest.split(" import ").collect();
+    if !parts.is_empty() {
+        return Some(parts[0].trim().replace('.', "/"));
+    }
+    None
+}
+
+fn normalize_import_path(path: &str) -> String {
+    let parts: Vec<&str> = path.split('/').collect();
+    let mut normalized = Vec::new();
+
+    for part in parts {
+        match part {
+            "." | "" => {}
+            ".." => {
+                normalized.pop();
+            }
+            _ => normalized.push(part),
+        }
+    }
+
+    normalized.join("/")
 }

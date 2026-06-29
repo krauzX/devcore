@@ -145,7 +145,7 @@ impl GitAnalyzer {
         Ok(files)
     }
 
-    /// Returns blame information for a file, listing each line's last修改ing commit and author.
+    /// Returns blame information for a file, listing each line's last-modifying commit and author.
     pub fn blame_file(&self, path: &str) -> Result<Vec<BlameLine>> {
         let _head = self.repo.head()?;
         let blame = self.repo.blame_file(
@@ -200,6 +200,6 @@ pub struct BlameLine {
     pub line: u32,
     /// OID of the commit that last modified this line
     pub commit_oid: String,
-    /// Author of the last修改ing commit
+    /// Author of the last-modifying commit
     pub author: String,
 }

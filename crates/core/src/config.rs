@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+/// Project-level configuration for DevCore tools.
+///
+/// Loaded from `.devcore/config.toml` in the project root. Falls back to
+/// sensible defaults when the file is missing or malformed.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DevCoreConfig {
     #[serde(default = "default_extensions")]
@@ -49,6 +53,7 @@ impl Default for DevCoreConfig {
 }
 
 impl DevCoreConfig {
+    /// Loads configuration from `.devcore/config.toml`, falling back to defaults.
     pub fn load(project_root: &Path) -> Self {
         let config_path = project_root.join(".devcore").join("config.toml");
         if config_path.exists() {

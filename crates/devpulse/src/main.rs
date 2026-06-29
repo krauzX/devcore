@@ -199,7 +199,9 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
             println!("\n⚠ Bottleneck: {} takes {:.0}% of your time", top_cat, pct);
             match top_cat.as_str() {
                 "Search" | "SEARCH" => {
-                    println!("  Suggestion: Consider creating an索引 or using `codetrail explain`");
+                    println!(
+                        "  Suggestion: Consider creating an index or using `codetrail explain`"
+                    );
                 }
                 "Review" | "REVIEW" => {
                     println!("  Suggestion: Break tasks into smaller PRs to reduce review surface");
