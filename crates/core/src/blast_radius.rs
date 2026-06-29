@@ -67,14 +67,34 @@ impl BlastRadiusAnalyzer {
         }
     }
 
+    pub fn list_all_files(&self) -> Vec<String> {
+        let mut files: Vec<String> = self.import_graph.keys().cloned().collect();
+        files.sort();
+        files
+    }
+
     fn find_direct_dependents(&self, target: &str) -> Vec<String> {
         let mut dependents = Vec::new();
+
+        // Extract the stem (filename without extension) for module-name matching
+        let target_stem = std::path::Path::new(target)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
 
         for (file, imports) in &self.import_graph {
             if file == target {
                 continue;
             }
+
+            // Direct path match
             if imports.contains(target) {
+                dependents.push(file.clone());
+                continue;
+            }
+
+            // Module name match (for Rust `use crate::module::*`)
+            if !target_stem.is_empty() && imports.contains(target_stem) {
                 dependents.push(file.clone());
             }
         }
@@ -135,11 +155,32 @@ impl BlastRadiusAnalyzer {
     fn extract_use_path(&self, line: &str) -> Option<String> {
         let rest = line.strip_prefix("use ")?;
         let path = rest.trim_end_matches(';').trim();
-        if path.starts_with("crate::") || path.starts_with("super::") || path.starts_with("self::") {
-            Some(path.replace("crate::", "").replace("super::", "../").replace("self::", ""))
-        } else {
-            None
+
+        // Handle `use crate::module::*` or `use crate::module::Type`
+        if let Some(inner) = path.strip_prefix("crate::") {
+            let parts: Vec<&str> = inner.split("::").collect();
+            if !parts.is_empty() && parts[0] != "*" {
+                return Some(parts[0].to_string());
+            }
         }
+
+        // Handle `use super::module`
+        if let Some(inner) = path.strip_prefix("super::") {
+            let parts: Vec<&str> = inner.split("::").collect();
+            if !parts.is_empty() && parts[0] != "*" {
+                return Some(parts[0].to_string());
+            }
+        }
+
+        // Handle `use self::module`
+        if let Some(inner) = path.strip_prefix("self::") {
+            let parts: Vec<&str> = inner.split("::").collect();
+            if !parts.is_empty() && parts[0] != "*" {
+                return Some(parts[0].to_string());
+            }
+        }
+
+        None
     }
 
     fn extract_go_import(&self, line: &str) -> Option<String> {

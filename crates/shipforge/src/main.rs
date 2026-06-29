@@ -97,7 +97,7 @@ fn main() -> Result<()> {
 
 fn cmd_init(path: &Path) -> Result<()> {
     let git = GitAnalyzer::open(path)?;
-    let store = Store::open(path)?;
+    let _store = Store::open(path)?;
 
     let files = git.list_files()?;
     println!("ShipForge initialized for project with {} tracked files.", files.len());
