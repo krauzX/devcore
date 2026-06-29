@@ -95,7 +95,8 @@ impl BlastRadiusAnalyzer {
     }
 
     fn find_direct_dependents(&self, target: &str) -> Vec<String> {
-        let mut dependents: Vec<String> = self.reverse_index
+        let mut dependents: Vec<String> = self
+            .reverse_index
             .get(target)
             .cloned()
             .unwrap_or_default()
@@ -257,7 +258,10 @@ impl BlastRadiusAnalyzer {
                         }
 
                         let rel = self.relative_path(&path);
-                        let excluded = config.exclude_dirs.iter().any(|d| rel.starts_with(d.as_str()));
+                        let excluded = config
+                            .exclude_dirs
+                            .iter()
+                            .any(|d| rel.starts_with(d.as_str()));
                         if !excluded {
                             files.push(path);
                         }

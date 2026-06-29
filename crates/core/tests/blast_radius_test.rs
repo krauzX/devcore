@@ -3,8 +3,16 @@ use std::fs;
 use tempfile::TempDir;
 
 fn create_test_project(dir: &std::path::Path) {
-    fs::write(dir.join("mod_a.ts"), "import './mod_b'\nexport function a() {}").unwrap();
-    fs::write(dir.join("mod_b.ts"), "import './mod_c'\nexport function b() {}").unwrap();
+    fs::write(
+        dir.join("mod_a.ts"),
+        "import './mod_b'\nexport function a() {}",
+    )
+    .unwrap();
+    fs::write(
+        dir.join("mod_b.ts"),
+        "import './mod_c'\nexport function b() {}",
+    )
+    .unwrap();
     fs::write(dir.join("mod_c.ts"), "export function c() {}").unwrap();
     fs::write(dir.join("main.ts"), "import './mod_a'\nimport './mod_b'").unwrap();
 }

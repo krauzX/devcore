@@ -100,7 +100,10 @@ fn cmd_init(path: &Path) -> Result<()> {
     let _store = Store::open(path)?;
 
     let files = git.list_files()?;
-    println!("ShipForge initialized for project with {} tracked files.", files.len());
+    println!(
+        "ShipForge initialized for project with {} tracked files.",
+        files.len()
+    );
 
     // Build initial blast radius graph
     let mut analyzer = BlastRadiusAnalyzer::new(path);
@@ -217,7 +220,10 @@ fn cmd_log(limit: usize, ai_only: bool) -> Result<()> {
         return Ok(());
     }
 
-    println!("{:<12}  {:<8}  {:<6}  {:<50}", "COMMIT", "SOURCE", "RISK", "INTENT");
+    println!(
+        "{:<12}  {:<8}  {:<6}  {:<50}",
+        "COMMIT", "SOURCE", "RISK", "INTENT"
+    );
     println!("{}", "-".repeat(80));
 
     for r in &filtered {
@@ -239,7 +245,10 @@ fn cmd_log(limit: usize, ai_only: bool) -> Result<()> {
             r.intent.clone()
         };
 
-        println!("{:<12}  {:<8}  {:<6}  {}", short_oid, source, risk_bar, intent);
+        println!(
+            "{:<12}  {:<8}  {:<6}  {}",
+            short_oid, source, risk_bar, intent
+        );
     }
 
     Ok(())
@@ -266,7 +275,12 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
     println!("\nChange History ({} receipts):", relevant.len());
     for r in &relevant {
         let short = &r.commit_oid[..12.min(r.commit_oid.len())];
-        println!("  [{}] {} — {}", r.timestamp.format("%Y-%m-%d %H:%M"), short, r.intent);
+        println!(
+            "  [{}] {} — {}",
+            r.timestamp.format("%Y-%m-%d %H:%M"),
+            short,
+            r.intent
+        );
         if r.is_ai_generated {
             println!("    Source: {:?}", r.ai_source);
         }
@@ -392,10 +406,7 @@ fn identify_risks(info: &CommitInfo, blast: &BlastRadius) -> Vec<Risk> {
                 },
                 file: file.path.clone(),
                 line: None,
-                description: format!(
-                    "{} downstream file(s) depend on this",
-                    dependents.len()
-                ),
+                description: format!("{} downstream file(s) depend on this", dependents.len()),
                 downstream_files: dependents,
             });
         }
@@ -406,7 +417,8 @@ fn identify_risks(info: &CommitInfo, blast: &BlastRadius) -> Vec<Risk> {
             severity: RiskSeverity::Medium,
             file: "(commit-wide)".to_string(),
             line: None,
-            description: "AI commit has more deletions than insertions — possible regressions".to_string(),
+            description: "AI commit has more deletions than insertions — possible regressions"
+                .to_string(),
             downstream_files: vec![],
         });
     }
@@ -470,11 +482,7 @@ fn print_receipt(receipt: &ChangeReceipt) {
         println!("├─ Risks ─────────────────────────────────────────────────┤");
         for risk in &receipt.risks {
             let sev = format!("[{:?}]", risk.severity);
-            println!(
-                "│  {} {:<52}│",
-                sev,
-                truncate(&risk.description, 52)
-            );
+            println!("│  {} {:<52}│", sev, truncate(&risk.description, 52));
         }
     }
     println!("└──────────────────────────────────────────────────────────┘");

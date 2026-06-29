@@ -21,15 +21,14 @@ impl GitAnalyzer {
     /// Returns the OID of the current HEAD commit as a hex string.
     pub fn head_oid(&self) -> Result<String> {
         let head = self.repo.head().context("No HEAD")?;
-        Ok(head.target().context("HEAD is not a direct reference")?.to_string())
+        Ok(head
+            .target()
+            .context("HEAD is not a direct reference")?
+            .to_string())
     }
 
     /// Returns commit information for all commits since the given timestamp, up to `limit`.
-    pub fn commits_since(
-        &self,
-        since: DateTime<Utc>,
-        limit: usize,
-    ) -> Result<Vec<CommitInfo>> {
+    pub fn commits_since(&self, since: DateTime<Utc>, limit: usize) -> Result<Vec<CommitInfo>> {
         let mut revwalk = self.repo.revwalk()?;
         revwalk.set_sorting(Sort::TIME)?;
         revwalk.push_head()?;
@@ -61,8 +60,7 @@ impl GitAnalyzer {
         let oid = commit.id().to_string();
         let message = commit.message().unwrap_or("").to_string();
         let author = commit.author().name().unwrap_or("unknown").to_string();
-        let timestamp = DateTime::from_timestamp(commit.time().seconds(), 0)
-            .unwrap_or_default();
+        let timestamp = DateTime::from_timestamp(commit.time().seconds(), 0).unwrap_or_default();
 
         let ai_source = AiSource::from_commit_message(&message);
         let is_ai = ai_source.is_some();
@@ -70,11 +68,9 @@ impl GitAnalyzer {
         let tree = commit.tree()?;
         let parent_tree = commit.parent(0).ok().map(|p| p.tree()).transpose()?;
         let mut diff_opts = DiffOptions::new();
-        let diff = self.repo.diff_tree_to_tree(
-            parent_tree.as_ref(),
-            Some(&tree),
-            Some(&mut diff_opts),
-        )?;
+        let diff =
+            self.repo
+                .diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), Some(&mut diff_opts))?;
 
         let mut files_changed = Vec::new();
         for delta_idx in 0..diff.deltas().len() {
@@ -125,7 +121,9 @@ impl GitAnalyzer {
         let tree = head.peel_to_tree()?;
         let entry = tree.get_path(std::path::Path::new(path))?;
         let obj = entry.to_object(&self.repo)?;
-        let blob = obj.into_blob().map_err(|e| anyhow::anyhow!("Failed to convert to blob: {:?}", e))?;
+        let blob = obj
+            .into_blob()
+            .map_err(|e| anyhow::anyhow!("Failed to convert to blob: {:?}", e))?;
         Ok(Some(String::from_utf8_lossy(blob.content()).to_string()))
     }
 
@@ -160,7 +158,11 @@ impl GitAnalyzer {
             lines.push(BlameLine {
                 line: hunk.final_start_line() as u32,
                 commit_oid: hunk.final_commit_id().to_string(),
-                author: hunk.final_signature().name().unwrap_or("unknown").to_string(),
+                author: hunk
+                    .final_signature()
+                    .name()
+                    .unwrap_or("unknown")
+                    .to_string(),
             });
         }
 

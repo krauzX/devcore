@@ -12,25 +12,37 @@ fn detects_cursor_in_commit_message() {
 #[test]
 fn detects_copilot() {
     let detector = AiDetector::new();
-    assert_eq!(detector.detect("copilot: add tests", "user"), Some(devcore_core::AiSource::Copilot));
+    assert_eq!(
+        detector.detect("copilot: add tests", "user"),
+        Some(devcore_core::AiSource::Copilot)
+    );
 }
 
 #[test]
 fn detects_claude() {
     let detector = AiDetector::new();
-    assert_eq!(detector.detect("claude: refactor", "user"), Some(devcore_core::AiSource::ClaudeCode));
+    assert_eq!(
+        detector.detect("claude: refactor", "user"),
+        Some(devcore_core::AiSource::ClaudeCode)
+    );
 }
 
 #[test]
 fn detects_ai_generated_generic() {
     let detector = AiDetector::new();
-    assert_eq!(detector.detect("AI-generated: feature", "user"), Some(devcore_core::AiSource::Unknown));
+    assert_eq!(
+        detector.detect("AI-generated: feature", "user"),
+        Some(devcore_core::AiSource::Unknown)
+    );
 }
 
 #[test]
 fn detects_bot_author() {
     let detector = AiDetector::new();
-    assert_eq!(detector.detect("update deps", "dependabot[bot]"), Some(devcore_core::AiSource::Unknown));
+    assert_eq!(
+        detector.detect("update deps", "dependabot[bot]"),
+        Some(devcore_core::AiSource::Unknown)
+    );
 }
 
 #[test]
@@ -42,7 +54,10 @@ fn no_detection_for_human_commit() {
 #[test]
 fn extract_intent_takes_first_line() {
     let detector = AiDetector::new();
-    assert_eq!(detector.extract_intent("fix auth\n\nDescription"), "fix auth");
+    assert_eq!(
+        detector.extract_intent("fix auth\n\nDescription"),
+        "fix auth"
+    );
 }
 
 #[test]

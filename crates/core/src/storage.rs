@@ -62,7 +62,10 @@ impl Store {
 
     /// Persists a change receipt, replacing any existing receipt with the same ID.
     pub fn save_receipt(&self, receipt: &ChangeReceipt) -> Result<()> {
-        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let json = serde_json::to_string(receipt)?;
 
         conn.execute(
@@ -87,10 +90,12 @@ impl Store {
     /// Retrieves a change receipt by its associated commit OID.
     /// Returns `Ok(None)` if no receipt exists for the given OID.
     pub fn get_receipt(&self, commit_oid: &str) -> Result<Option<ChangeReceipt>> {
-        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
-        let mut stmt = conn.prepare(
-            "SELECT receipt_json FROM change_receipts WHERE commit_oid = ?1",
-        )?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+        let mut stmt =
+            conn.prepare("SELECT receipt_json FROM change_receipts WHERE commit_oid = ?1")?;
 
         let mut rows = stmt.query_map(params![commit_oid], |row| {
             let json: String = row.get(0)?;
@@ -108,10 +113,12 @@ impl Store {
 
     /// Returns the most recent change receipts, ordered by timestamp descending.
     pub fn recent_receipts(&self, limit: usize) -> Result<Vec<ChangeReceipt>> {
-        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
-        let mut stmt = conn.prepare(
-            "SELECT receipt_json FROM change_receipts ORDER BY timestamp DESC LIMIT ?1",
-        )?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+        let mut stmt = conn
+            .prepare("SELECT receipt_json FROM change_receipts ORDER BY timestamp DESC LIMIT ?1")?;
 
         let rows = stmt.query_map(params![limit as i64], |row| {
             let json: String = row.get(0)?;
@@ -130,7 +137,10 @@ impl Store {
 
     /// Returns all change receipts that touch the given file path, ordered by timestamp descending.
     pub fn receipts_for_file(&self, file_path: &str) -> Result<Vec<ChangeReceipt>> {
-        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT receipt_json FROM change_receipts
              WHERE receipt_json LIKE ?1 ESCAPE '\\'
@@ -156,7 +166,10 @@ impl Store {
 
     /// Persists a workflow event, replacing any existing event with the same ID.
     pub fn save_event(&self, event: &WorkflowEvent) -> Result<()> {
-        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let json = serde_json::to_string(event)?;
 
         conn.execute(
@@ -176,7 +189,10 @@ impl Store {
 
     /// Returns all workflow events since the given timestamp, ordered by timestamp ascending.
     pub fn events_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<WorkflowEvent>> {
-        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT details_json FROM workflow_events
              WHERE timestamp >= ?1

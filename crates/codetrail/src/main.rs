@@ -136,11 +136,7 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
 
     for r in receipts.iter().take(limit) {
         let short = &r.commit_oid[..12.min(r.commit_oid.len())];
-        let ai_marker = if r.is_ai_generated {
-            " [AI]"
-        } else {
-            ""
-        };
+        let ai_marker = if r.is_ai_generated { " [AI]" } else { "" };
 
         println!(
             "\n  {}{} — {}",
@@ -162,7 +158,10 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
                 ChangeStatus::Renamed => "~",
                 ChangeStatus::Modified => "M",
             };
-            println!("  Status: {} ({}+/{}-)", marker, fc.insertions, fc.deletions);
+            println!(
+                "  Status: {} ({}+/{}-)",
+                marker, fc.insertions, fc.deletions
+            );
         }
 
         if !r.risks.is_empty() {
@@ -195,12 +194,7 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
     for r in relevant.iter().take(10) {
         let short = &r.commit_oid[..12.min(r.commit_oid.len())];
         let ai = if r.is_ai_generated { " [AI]" } else { "" };
-        println!(
-            "  {}{} — {}",
-            short,
-            ai,
-            r.intent
-        );
+        println!("  {}{} — {}", short, ai, r.intent);
     }
 
     // Blast radius
@@ -219,7 +213,11 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
     }
 
     if !br.indirect_dependents.is_empty() {
-        println!("  Indirect ({} files, {} hops):", br.indirect_dependents.len(), br.depth);
+        println!(
+            "  Indirect ({} files, {} hops):",
+            br.indirect_dependents.len(),
+            br.depth
+        );
         for d in &br.indirect_dependents {
             println!("    → {}", d);
         }
@@ -229,7 +227,9 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
     let all_risks: Vec<&Risk> = relevant
         .iter()
         .flat_map(|r| r.risks.iter())
-        .filter(|risk| risk.file == file_path || risk.downstream_files.contains(&file_path.to_string()))
+        .filter(|risk| {
+            risk.file == file_path || risk.downstream_files.contains(&file_path.to_string())
+        })
         .collect();
 
     if !all_risks.is_empty() {
@@ -294,7 +294,11 @@ fn cmd_ai_log(limit: usize, source_filter: Option<&str>) -> Result<()> {
             if let Some(src) = source_filter {
                 r.ai_source
                     .as_ref()
-                    .map(|s| format!("{:?}", s).to_lowercase().contains(&src.to_lowercase()))
+                    .map(|s| {
+                        format!("{:?}", s)
+                            .to_lowercase()
+                            .contains(&src.to_lowercase())
+                    })
                     .unwrap_or(false)
             } else {
                 true
@@ -362,13 +366,22 @@ fn cmd_risk(project_root: &Path) -> Result<()> {
     println!("Project Risk Summary");
     println!("{}", "=".repeat(50));
     println!("Total receipts:     {}", receipts.len());
-    println!("AI-generated:       {} ({:.0}%)", ai_count, if receipts.is_empty() { 0.0 } else { ai_count as f64 / receipts.len() as f64 * 100.0 });
+    println!(
+        "AI-generated:       {} ({:.0}%)",
+        ai_count,
+        if receipts.is_empty() {
+            0.0
+        } else {
+            ai_count as f64 / receipts.len() as f64 * 100.0
+        }
+    );
     println!("Human-authored:     {}", human_count);
     println!("High-risk (≥7):     {}", high_risk);
     println!("Average risk score: {:.1}/10", avg_risk);
 
     // Files with most changes
-    let mut file_changes: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut file_changes: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
     for r in &receipts {
         for fc in &r.files_changed {
             *file_changes.entry(fc.path.clone()).or_insert(0) += 1;
@@ -398,7 +411,11 @@ fn cmd_hotspots(project_root: &Path, limit: usize) -> Result<()> {
         .iter()
         .map(|f| {
             let br = analyzer.analyze(f);
-            (f.clone(), br.direct_dependents.len(), br.indirect_dependents.len())
+            (
+                f.clone(),
+                br.direct_dependents.len(),
+                br.indirect_dependents.len(),
+            )
         })
         .filter(|(_, direct, _)| *direct > 0)
         .collect();

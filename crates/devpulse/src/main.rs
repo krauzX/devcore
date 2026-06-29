@@ -81,9 +81,12 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Init { path } => cmd_init(&path),
         Commands::Report { period, path } => cmd_report(&path, &period),
-        Commands::Event { kind, minutes, description, path } => {
-            cmd_record_event(&path, &kind, minutes, &description)
-        }
+        Commands::Event {
+            kind,
+            minutes,
+            description,
+            path,
+        } => cmd_record_event(&path, &kind, minutes, &description),
         Commands::Suggest { path } => cmd_suggest(&path),
         Commands::Chart { period, path } => cmd_chart(&path, &period),
     }
@@ -120,7 +123,9 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     // Process recorded events
     for event in &events {
         let cat = format!("{:?}", event.event_type);
-        let mins = event.details.get("minutes")
+        let mins = event
+            .details
+            .get("minutes")
             .and_then(|v| v.as_f64())
             .unwrap_or(0.0);
         *time_by_category.entry(cat).or_insert(0.0) += mins;
@@ -162,7 +167,10 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     }
 
     let hours = total_minutes / 60.0;
-    println!("Total time tracked: {:.1}h ({:.0} minutes)", hours, total_minutes);
+    println!(
+        "Total time tracked: {:.1}h ({:.0} minutes)",
+        hours, total_minutes
+    );
     println!();
 
     // Sort by time
@@ -207,7 +215,12 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     Ok(())
 }
 
-fn cmd_record_event(project_root: &Path, kind: &str, minutes: u32, description: &str) -> Result<()> {
+fn cmd_record_event(
+    project_root: &Path,
+    kind: &str,
+    minutes: u32,
+    description: &str,
+) -> Result<()> {
     let store = Store::open(project_root)?;
 
     let event_type = match kind.to_lowercase().as_str() {
@@ -236,7 +249,10 @@ fn cmd_record_event(project_root: &Path, kind: &str, minutes: u32, description: 
 
     store.save_event(&event)?;
 
-    println!("Recorded: {} minutes of {} — {}", minutes, kind, description);
+    println!(
+        "Recorded: {} minutes of {} — {}",
+        minutes, kind, description
+    );
 
     Ok(())
 }
@@ -260,7 +276,12 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
         return Ok(());
     }
 
-    println!("Last 7 days: {} commits ({} AI, {} human)", commits.len(), ai_count, human_count);
+    println!(
+        "Last 7 days: {} commits ({} AI, {} human)",
+        commits.len(),
+        ai_count,
+        human_count
+    );
     println!();
 
     // Analyze blast radius of recent changes
@@ -284,7 +305,10 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
         for (file, deps) in &high_blast_files {
             println!("  ⚠ {} ({} dependents)", file, deps);
         }
-        println!("  → Consider using `codetrail blast {}` before next change", high_blast_files[0].0);
+        println!(
+            "  → Consider using `codetrail blast {}` before next change",
+            high_blast_files[0].0
+        );
         println!();
     }
 
@@ -309,11 +333,15 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
     if commits.len() > 20 {
         println!("  • Consider batching related changes into fewer commits");
     }
-    let large_commits: Vec<_> = commits.iter()
+    let large_commits: Vec<_> = commits
+        .iter()
         .filter(|c| (c.insertions + c.deletions) > 200)
         .collect();
     if !large_commits.is_empty() {
-        println!("  • {} large commits (>200 changes) — break into smaller pieces", large_commits.len());
+        println!(
+            "  • {} large commits (>200 changes) — break into smaller pieces",
+            large_commits.len()
+        );
     }
     println!("  • Use `codetrail explain <file>` before modifying high-traffic files");
     println!("  • Record time blocks with `devpulse event` for better insights");
@@ -339,7 +367,9 @@ fn cmd_chart(project_root: &Path, period: &str) -> Result<()> {
     let mut hourly: HashMap<u32, u32> = HashMap::new();
     for event in &events {
         let hour = event.timestamp.hour();
-        let mins = event.details.get("minutes")
+        let mins = event
+            .details
+            .get("minutes")
             .and_then(|v| v.as_u64())
             .unwrap_or(0) as u32;
         *hourly.entry(hour).or_insert(0) += mins;
@@ -352,7 +382,11 @@ fn cmd_chart(project_root: &Path, period: &str) -> Result<()> {
 
     for hour in 0..24 {
         let mins = hourly.get(&hour).copied().unwrap_or(0);
-        let bar_len = if max_val > 0 { (mins as f64 / max_val as f64 * 30.0) as usize } else { 0 };
+        let bar_len = if max_val > 0 {
+            (mins as f64 / max_val as f64 * 30.0) as usize
+        } else {
+            0
+        };
         let bar = "█".repeat(bar_len);
         let marker = if mins > 0 { "●" } else { " " };
         println!("{:>2}:00  {:>6}m  {} {}", hour, mins, bar, marker);
@@ -363,7 +397,10 @@ fn cmd_chart(project_root: &Path, period: &str) -> Result<()> {
 
 fn parse_period(period: &str) -> (DateTime<Utc>, String) {
     match period.to_lowercase().as_str() {
-        "day" | "today" => (Utc::now() - Duration::hours(24), "Last 24 hours".to_string()),
+        "day" | "today" => (
+            Utc::now() - Duration::hours(24),
+            "Last 24 hours".to_string(),
+        ),
         "week" | "7d" => (Utc::now() - Duration::days(7), "Last 7 days".to_string()),
         "month" | "30d" => (Utc::now() - Duration::days(30), "Last 30 days".to_string()),
         _ => (Utc::now() - Duration::days(7), "Last 7 days".to_string()),

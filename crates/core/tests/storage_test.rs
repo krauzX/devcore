@@ -1,5 +1,5 @@
-use devcore_core::{Store, ChangeReceipt, AiSource};
 use chrono::Utc;
+use devcore_core::{AiSource, ChangeReceipt, Store};
 use tempfile::TempDir;
 
 fn test_receipt() -> ChangeReceipt {

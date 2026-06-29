@@ -169,5 +169,3 @@ pub enum EventType {
     /// An interaction with an AI assistant occurred
     AiInteraction,
 }
-
-
