@@ -29,12 +29,15 @@ CREATE INDEX IF NOT EXISTS idx_events_timestamp ON workflow_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON workflow_events(event_type);
 "#;
 
+/// Persistent storage backed by SQLite for change receipts and workflow events.
 pub struct Store {
     conn: Mutex<Connection>,
     _path: PathBuf,
 }
 
 impl Store {
+    /// Opens or creates the database at `.devcore/devcore.db` inside the project root.
+    /// Creates the `.devcore` directory and schema if they do not exist.
     pub fn open(project_root: &Path) -> Result<Self> {
         let db_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&db_dir)?;
@@ -51,6 +54,7 @@ impl Store {
         })
     }
 
+    /// Persists a change receipt, replacing any existing receipt with the same ID.
     pub fn save_receipt(&self, receipt: &ChangeReceipt) -> Result<()> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let json = serde_json::to_string(receipt)?;
@@ -74,6 +78,8 @@ impl Store {
         Ok(())
     }
 
+    /// Retrieves a change receipt by its associated commit OID.
+    /// Returns `Ok(None)` if no receipt exists for the given OID.
     pub fn get_receipt(&self, commit_oid: &str) -> Result<Option<ChangeReceipt>> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
@@ -94,6 +100,7 @@ impl Store {
         }
     }
 
+    /// Returns the most recent change receipts, ordered by timestamp descending.
     pub fn recent_receipts(&self, limit: usize) -> Result<Vec<ChangeReceipt>> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
@@ -115,6 +122,7 @@ impl Store {
         Ok(receipts)
     }
 
+    /// Returns all change receipts that touch the given file path, ordered by timestamp descending.
     pub fn receipts_for_file(&self, file_path: &str) -> Result<Vec<ChangeReceipt>> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
@@ -139,6 +147,7 @@ impl Store {
         Ok(receipts)
     }
 
+    /// Persists a workflow event, replacing any existing event with the same ID.
     pub fn save_event(&self, event: &WorkflowEvent) -> Result<()> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let json = serde_json::to_string(event)?;
@@ -158,6 +167,7 @@ impl Store {
         Ok(())
     }
 
+    /// Returns all workflow events since the given timestamp, ordered by timestamp ascending.
     pub fn events_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<WorkflowEvent>> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(

@@ -4,22 +4,27 @@ use chrono::{DateTime, Utc};
 use git2::{Delta, DiffOptions, Repository, Sort};
 use std::path::Path;
 
+/// Analyzes a git repository to extract commit history, file changes, and blame information.
 pub struct GitAnalyzer {
     repo: Repository,
 }
 
 impl GitAnalyzer {
+    /// Opens a git repository at the given path.
+    /// Returns an error if the path is not a valid git repository.
     pub fn open(path: &Path) -> Result<Self> {
         let repo = Repository::open(path)
             .with_context(|| format!("Failed to open git repo at {}", path.display()))?;
         Ok(Self { repo })
     }
 
+    /// Returns the OID of the current HEAD commit as a hex string.
     pub fn head_oid(&self) -> Result<String> {
         let head = self.repo.head().context("No HEAD")?;
         Ok(head.target().context("HEAD is not a direct reference")?.to_string())
     }
 
+    /// Returns commit information for all commits since the given timestamp, up to `limit`.
     pub fn commits_since(
         &self,
         since: DateTime<Utc>,
@@ -51,6 +56,7 @@ impl GitAnalyzer {
         Ok(commits)
     }
 
+    /// Extracts structured information from a single git commit.
     pub fn commit_info(&self, commit: &git2::Commit) -> Result<CommitInfo> {
         let oid = commit.id().to_string();
         let message = commit.message().unwrap_or("").to_string();
@@ -132,6 +138,7 @@ impl GitAnalyzer {
         Ok((stats.insertions() as u32, stats.deletions() as u32))
     }
 
+    /// Returns the text content of a file at HEAD, or `None` if the file does not exist.
     pub fn file_content(&self, path: &str) -> Result<Option<String>> {
         let head = self.repo.head()?;
         let tree = head.peel_to_tree()?;
@@ -141,6 +148,7 @@ impl GitAnalyzer {
         Ok(Some(String::from_utf8_lossy(blob.content()).to_string()))
     }
 
+    /// Lists all file paths tracked at HEAD.
     pub fn list_files(&self) -> Result<Vec<String>> {
         let head = self.repo.head()?;
         let tree = head.peel_to_tree()?;
@@ -158,6 +166,7 @@ impl GitAnalyzer {
         Ok(files)
     }
 
+    /// Returns blame information for a file, listing each line's last修改ing commit and author.
     pub fn blame_file(&self, path: &str) -> Result<Vec<BlameLine>> {
         let _head = self.repo.head()?;
         let blame = self.repo.blame_file(
@@ -178,22 +187,36 @@ impl GitAnalyzer {
     }
 }
 
+/// Summary information about a single git commit.
 #[derive(Debug, Clone)]
 pub struct CommitInfo {
+    /// Git commit OID (hex string)
     pub oid: String,
+    /// Full commit message
     pub message: String,
+    /// Commit author name
     pub author: String,
+    /// Commit timestamp
     pub timestamp: DateTime<Utc>,
+    /// Whether the commit appears to be AI-generated
     pub is_ai_generated: bool,
+    /// Detected AI source, if any
     pub ai_source: Option<AiSource>,
+    /// Files modified in this commit
     pub files_changed: Vec<FileChange>,
+    /// Total lines inserted
     pub insertions: u32,
+    /// Total lines deleted
     pub deletions: u32,
 }
 
+/// A single line from `git blame`, recording which commit last touched it.
 #[derive(Debug, Clone)]
 pub struct BlameLine {
+    /// 1-based line number in the file
     pub line: u32,
+    /// OID of the commit that last modified this line
     pub commit_oid: String,
+    /// Author of the last修改ing commit
     pub author: String,
 }

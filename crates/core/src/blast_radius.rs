@@ -3,12 +3,15 @@ use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+/// Analyzes the downstream impact of file changes by building an import/dependency graph.
 pub struct BlastRadiusAnalyzer {
     root: PathBuf,
     import_graph: HashMap<String, HashSet<String>>,
 }
 
 impl BlastRadiusAnalyzer {
+    /// Creates a new analyzer rooted at the given project directory.
+    /// Call `build_graph` before `analyze` to populate the dependency graph.
     pub fn new(root: &Path) -> Self {
         Self {
             root: root.to_path_buf(),
@@ -16,6 +19,8 @@ impl BlastRadiusAnalyzer {
         }
     }
 
+    /// Scans the project for source files and builds the import dependency graph.
+    /// Supports TypeScript, JavaScript, Rust, Go, and Python import syntax.
     pub fn build_graph(&mut self) -> Result<()> {
         let files = self.collect_source_files()?;
         self.import_graph.clear();
@@ -31,6 +36,8 @@ impl BlastRadiusAnalyzer {
         Ok(())
     }
 
+    /// Analyzes the blast radius of a file change, returning direct and indirect dependents.
+    /// Traverses up to 3 levels of transitive dependencies.
     pub fn analyze(&self, file_path: &str) -> BlastRadius {
         let direct = self.find_direct_dependents(file_path);
         let mut indirect = HashSet::new();
@@ -67,6 +74,7 @@ impl BlastRadiusAnalyzer {
         }
     }
 
+    /// Returns a sorted list of all source files in the dependency graph.
     pub fn list_all_files(&self) -> Vec<String> {
         let mut files: Vec<String> = self.import_graph.keys().cloned().collect();
         files.sort();
