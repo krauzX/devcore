@@ -7,6 +7,121 @@ use std::path::{Path, PathBuf};
 pub struct BlastRadiusAnalyzer {
     root: PathBuf,
     import_graph: HashMap<String, HashSet<String>>,
+    reverse_index: HashMap<String, HashSet<String>>,
+}
+
+fn normalize_import_path(path: &str) -> String {
+    let parts: Vec<&str> = path.split('/').collect();
+    let mut normalized = Vec::new();
+
+    for part in parts {
+        match part {
+            "." | "" => {}
+            ".." => {
+                normalized.pop();
+            }
+            _ => normalized.push(part),
+        }
+    }
+
+    normalized.join("/")
+}
+
+fn extract_import_path(line: &str) -> Option<String> {
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.len() >= 2 {
+        let path = parts[1].trim_matches(|c| c == '\'' || c == '"' || c == '`');
+        if path.starts_with('.') || path.starts_with('/') {
+            return Some(normalize_import_path(path));
+        }
+    }
+    None
+}
+
+fn extract_use_path(line: &str) -> Option<String> {
+    let rest = line.strip_prefix("use ")?;
+    let path = rest.trim_end_matches(';').trim();
+
+    if let Some(inner) = path.strip_prefix("crate::") {
+        let parts: Vec<&str> = inner.split("::").collect();
+        if !parts.is_empty() && parts[0] != "*" {
+            return Some(parts[0].to_string());
+        }
+    }
+
+    if let Some(inner) = path.strip_prefix("super::") {
+        let parts: Vec<&str> = inner.split("::").collect();
+        if !parts.is_empty() && parts[0] != "*" {
+            return Some(parts[0].to_string());
+        }
+    }
+
+    if let Some(inner) = path.strip_prefix("self::") {
+        let parts: Vec<&str> = inner.split("::").collect();
+        if !parts.is_empty() && parts[0] != "*" {
+            return Some(parts[0].to_string());
+        }
+    }
+
+    None
+}
+
+fn extract_go_import(line: &str) -> Option<String> {
+    if line.contains("\"") {
+        let start = line.find('"')? + 1;
+        let end = line.rfind('"')?;
+        if start < end {
+            return Some(line[start..end].to_string());
+        }
+    }
+    None
+}
+
+fn extract_py_import(line: &str) -> Option<String> {
+    let rest = line.strip_prefix("from ")?;
+    let parts: Vec<&str> = rest.split(" import ").collect();
+    if !parts.is_empty() {
+        return Some(parts[0].trim().replace('.', "/"));
+    }
+    None
+}
+
+fn extract_imports(content: &str) -> HashSet<String> {
+    let mut imports = HashSet::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // TypeScript/JavaScript imports
+        if trimmed.starts_with("import ") || trimmed.starts_with("from ") {
+            if let Some(path) = extract_import_path(trimmed) {
+                imports.insert(path);
+            }
+        }
+
+        // Rust use statements
+        if trimmed.starts_with("use ") {
+            if let Some(path) = extract_use_path(trimmed) {
+                imports.insert(path);
+            }
+        }
+
+        // Go imports
+        if trimmed.starts_with("import ") {
+            if let Some(path) = extract_go_import(trimmed) {
+                imports.insert(path);
+            }
+        }
+
+        // Python imports
+        if trimmed.starts_with("from ") && trimmed.contains(" import ") {
+            if let Some(path) = extract_py_import(trimmed) {
+                imports.insert(path);
+            }
+        }
+    }
+
+    imports
 }
 
 impl BlastRadiusAnalyzer {
@@ -16,6 +131,7 @@ impl BlastRadiusAnalyzer {
         Self {
             root: root.to_path_buf(),
             import_graph: HashMap::new(),
+            reverse_index: HashMap::new(),
         }
     }
 
@@ -24,12 +140,22 @@ impl BlastRadiusAnalyzer {
     pub fn build_graph(&mut self) -> Result<()> {
         let files = self.collect_source_files()?;
         self.import_graph.clear();
+        self.reverse_index.clear();
 
         for file in &files {
             if let Ok(content) = std::fs::read_to_string(file) {
-                let imports = self.extract_imports(&content);
+                let imports = extract_imports(&content);
                 let rel = self.relative_path(file);
                 self.import_graph.insert(rel, imports);
+            }
+        }
+
+        for (file, imports) in &self.import_graph {
+            for import in imports {
+                self.reverse_index
+                    .entry(import.clone())
+                    .or_default()
+                    .insert(file.clone());
             }
         }
 
@@ -82,150 +208,30 @@ impl BlastRadiusAnalyzer {
     }
 
     fn find_direct_dependents(&self, target: &str) -> Vec<String> {
-        let mut dependents = Vec::new();
+        let mut dependents: Vec<String> = self.reverse_index
+            .get(target)
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
 
-        // Extract the stem (filename without extension) for module-name matching
         let target_stem = std::path::Path::new(target)
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("");
 
-        for (file, imports) in &self.import_graph {
-            if file == target {
-                continue;
-            }
-
-            // Direct path match
-            if imports.contains(target) {
-                dependents.push(file.clone());
-                continue;
-            }
-
-            // Module name match (for Rust `use crate::module::*`)
-            if !target_stem.is_empty() && imports.contains(target_stem) {
-                dependents.push(file.clone());
+        if !target_stem.is_empty() {
+            if let Some(stem_deps) = self.reverse_index.get(target_stem) {
+                for dep in stem_deps {
+                    if !dependents.contains(dep) {
+                        dependents.push(dep.clone());
+                    }
+                }
             }
         }
 
         dependents.sort();
         dependents
-    }
-
-    fn extract_imports(&self, content: &str) -> HashSet<String> {
-        let mut imports = HashSet::new();
-
-        for line in content.lines() {
-            let trimmed = line.trim();
-
-            // TypeScript/JavaScript imports
-            if trimmed.starts_with("import ") || trimmed.starts_with("from ") {
-                if let Some(path) = self.extract_import_path(trimmed) {
-                    imports.insert(path);
-                }
-            }
-
-            // Rust use statements
-            if trimmed.starts_with("use ") {
-                if let Some(path) = self.extract_use_path(trimmed) {
-                    imports.insert(path);
-                }
-            }
-
-            // Go imports
-            if trimmed.starts_with("import ") {
-                if let Some(path) = self.extract_go_import(trimmed) {
-                    imports.insert(path);
-                }
-            }
-
-            // Python imports
-            if trimmed.starts_with("from ") && trimmed.contains(" import ") {
-                if let Some(path) = self.extract_py_import(trimmed) {
-                    imports.insert(path);
-                }
-            }
-        }
-
-        imports
-    }
-
-    fn extract_import_path(&self, line: &str) -> Option<String> {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() >= 2 {
-            let path = parts[1].trim_matches(|c| c == '\'' || c == '"' || c == '`');
-            if path.starts_with('.') || path.starts_with('/') {
-                return Some(self.normalize_import_path(path));
-            }
-        }
-        None
-    }
-
-    fn extract_use_path(&self, line: &str) -> Option<String> {
-        let rest = line.strip_prefix("use ")?;
-        let path = rest.trim_end_matches(';').trim();
-
-        // Handle `use crate::module::*` or `use crate::module::Type`
-        if let Some(inner) = path.strip_prefix("crate::") {
-            let parts: Vec<&str> = inner.split("::").collect();
-            if !parts.is_empty() && parts[0] != "*" {
-                return Some(parts[0].to_string());
-            }
-        }
-
-        // Handle `use super::module`
-        if let Some(inner) = path.strip_prefix("super::") {
-            let parts: Vec<&str> = inner.split("::").collect();
-            if !parts.is_empty() && parts[0] != "*" {
-                return Some(parts[0].to_string());
-            }
-        }
-
-        // Handle `use self::module`
-        if let Some(inner) = path.strip_prefix("self::") {
-            let parts: Vec<&str> = inner.split("::").collect();
-            if !parts.is_empty() && parts[0] != "*" {
-                return Some(parts[0].to_string());
-            }
-        }
-
-        None
-    }
-
-    fn extract_go_import(&self, line: &str) -> Option<String> {
-        if line.contains("\"") {
-            let start = line.find('"')? + 1;
-            let end = line.rfind('"')?;
-            if start < end {
-                return Some(line[start..end].to_string());
-            }
-        }
-        None
-    }
-
-    fn extract_py_import(&self, line: &str) -> Option<String> {
-        let rest = line.strip_prefix("from ")?;
-        let parts: Vec<&str> = rest.split(" import ").collect();
-        if !parts.is_empty() {
-            return Some(parts[0].trim().replace('.', "/"));
-        }
-        None
-    }
-
-    fn normalize_import_path(&self, path: &str) -> String {
-        let parts: Vec<&str> = path.split('/').collect();
-        let mut normalized = Vec::new();
-
-        for part in parts {
-            match part {
-                "." | "" => {}
-                ".." => {
-                    normalized.pop();
-                }
-                _ => normalized.push(part),
-            }
-        }
-
-        normalized.join("/")
     }
 
     fn collect_source_files(&self) -> Result<Vec<PathBuf>> {
