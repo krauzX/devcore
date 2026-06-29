@@ -12,6 +12,12 @@ static AI_GENERIC_RE: Lazy<Regex> =
 
 pub struct AiDetector;
 
+impl Default for AiDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AiDetector {
     pub fn new() -> Self {
         Self

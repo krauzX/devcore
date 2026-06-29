@@ -56,7 +56,7 @@ impl BlastRadiusAnalyzer {
         let mut indirect = HashSet::new();
         let mut depth = 0u32;
 
-        let mut frontier: Vec<String> = direct.iter().cloned().collect();
+        let mut frontier: Vec<String> = direct.to_vec();
         let mut visited: HashSet<String> = direct.iter().cloned().collect();
 
         while !frontier.is_empty() {

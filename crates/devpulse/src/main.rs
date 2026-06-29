@@ -177,7 +177,7 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     let mut sorted: Vec<_> = time_by_category.into_iter().collect();
     sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-    println!("{:<20} {:>8}  {:>6}  {}", "CATEGORY", "TIME", "PCT", "BAR");
+    println!("{:<20} {:>8}  {:>6}  BAR", "CATEGORY", "TIME", "PCT");
     println!("{}", "-".repeat(60));
 
     for (cat, mins) in &sorted {
