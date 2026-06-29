@@ -6,6 +6,8 @@ pub mod storage;
 pub mod ai_detector;
 /// Dependency graph analysis for estimating change blast radius.
 pub mod blast_radius;
+/// Configurable project settings loaded from .devcore/config.toml.
+pub mod config;
 /// Core data models for change receipts, risks, and workflow events.
 pub mod models;
 

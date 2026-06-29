@@ -1,3 +1,4 @@
+use crate::config::DevCoreConfig;
 use crate::models::BlastRadius;
 use anyhow::Result;
 use std::collections::{HashMap, HashSet};
@@ -231,8 +232,7 @@ impl BlastRadiusAnalyzer {
     }
 
     fn collect_source_files(&self) -> Result<Vec<PathBuf>> {
-        let extensions = ["ts", "tsx", "js", "jsx", "rs", "go", "py"];
-        const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024;
+        let config = DevCoreConfig::load(&self.root);
         let mut files = Vec::new();
 
         for entry in walkdir::WalkDir::new(&self.root)
@@ -246,21 +246,19 @@ impl BlastRadiusAnalyzer {
                 }
 
                 if let Some(ext) = entry.path().extension() {
-                    if extensions.contains(&ext.to_string_lossy().as_ref()) {
+                    let ext_str = ext.to_string_lossy();
+                    if config.source_extensions.contains(&ext_str.to_string()) {
                         let path = entry.path().to_path_buf();
 
                         if let Ok(metadata) = std::fs::metadata(&path) {
-                            if metadata.len() > MAX_FILE_SIZE {
+                            if metadata.len() > config.max_file_size_bytes {
                                 continue;
                             }
                         }
 
                         let rel = self.relative_path(&path);
-                        if !rel.starts_with("node_modules")
-                            && !rel.starts_with("target")
-                            && !rel.starts_with(".git")
-                            && !rel.starts_with(".devcore")
-                        {
+                        let excluded = config.exclude_dirs.iter().any(|d| rel.starts_with(d.as_str()));
+                        if !excluded {
                             files.push(path);
                         }
                     }
