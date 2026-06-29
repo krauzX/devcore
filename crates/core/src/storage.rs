@@ -29,6 +29,12 @@ CREATE INDEX IF NOT EXISTS idx_events_timestamp ON workflow_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON workflow_events(event_type);
 "#;
 
+fn escape_like_pattern(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
 /// Persistent storage backed by SQLite for change receipts and workflow events.
 pub struct Store {
     conn: Mutex<Connection>,
@@ -127,11 +133,12 @@ impl Store {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT receipt_json FROM change_receipts
-             WHERE receipt_json LIKE ?1
+             WHERE receipt_json LIKE ?1 ESCAPE '\\'
              ORDER BY timestamp DESC",
         )?;
 
-        let pattern = format!("%\"path\":\"{}\"%", file_path);
+        let escaped = escape_like_pattern(file_path);
+        let pattern = format!("%\"path\":\"{}\"%", escaped);
         let rows = stmt.query_map(params![pattern], |row| {
             let json: String = row.get(0)?;
             Ok(json)
