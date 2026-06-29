@@ -230,20 +230,34 @@ impl BlastRadiusAnalyzer {
 
     fn collect_source_files(&self) -> Result<Vec<PathBuf>> {
         let extensions = ["ts", "tsx", "js", "jsx", "rs", "go", "py"];
+        const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024; // 10MB
         let mut files = Vec::new();
 
         for entry in walkdir::WalkDir::new(&self.root)
+            .follow_links(false)
             .into_iter()
             .filter_map(|e| e.ok())
         {
             if entry.file_type().is_file() {
+                if entry.file_type().is_symlink() {
+                    continue;
+                }
+
                 if let Some(ext) = entry.path().extension() {
                     if extensions.contains(&ext.to_string_lossy().as_ref()) {
                         let path = entry.path().to_path_buf();
+
+                        if let Ok(metadata) = std::fs::metadata(&path) {
+                            if metadata.len() > MAX_FILE_SIZE {
+                                continue;
+                            }
+                        }
+
                         let rel = self.relative_path(&path);
                         if !rel.starts_with("node_modules")
                             && !rel.starts_with("target")
                             && !rel.starts_with(".git")
+                            && !rel.starts_with(".devcore")
                         {
                             files.push(path);
                         }
