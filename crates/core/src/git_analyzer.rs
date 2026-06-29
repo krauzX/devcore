@@ -67,26 +67,8 @@ impl GitAnalyzer {
         let ai_source = AiSource::from_commit_message(&message);
         let is_ai = ai_source.is_some();
 
-        let files_changed = self.commit_files(commit)?;
-        let diff_stats = self.commit_diff_stats(commit)?;
-
-        Ok(CommitInfo {
-            oid,
-            message,
-            author,
-            timestamp,
-            is_ai_generated: is_ai,
-            ai_source,
-            files_changed,
-            insertions: diff_stats.0,
-            deletions: diff_stats.1,
-        })
-    }
-
-    fn commit_files(&self, commit: &git2::Commit) -> Result<Vec<FileChange>> {
         let tree = commit.tree()?;
         let parent_tree = commit.parent(0).ok().map(|p| p.tree()).transpose()?;
-
         let mut diff_opts = DiffOptions::new();
         let diff = self.repo.diff_tree_to_tree(
             parent_tree.as_ref(),
@@ -94,7 +76,7 @@ impl GitAnalyzer {
             Some(&mut diff_opts),
         )?;
 
-        let mut files = Vec::new();
+        let mut files_changed = Vec::new();
         for delta_idx in 0..diff.deltas().len() {
             let delta = diff.deltas().nth(delta_idx).unwrap();
             let path = delta
@@ -112,7 +94,7 @@ impl GitAnalyzer {
                 _ => ChangeStatus::Modified,
             };
 
-            files.push(FileChange {
+            files_changed.push(FileChange {
                 path,
                 status,
                 insertions: 0,
@@ -120,22 +102,21 @@ impl GitAnalyzer {
             });
         }
 
-        Ok(files)
-    }
-
-    fn commit_diff_stats(&self, commit: &git2::Commit) -> Result<(u32, u32)> {
-        let tree = commit.tree()?;
-        let parent_tree = commit.parent(0).ok().map(|p| p.tree()).transpose()?;
-
-        let mut diff_opts = DiffOptions::new();
-        let diff = self.repo.diff_tree_to_tree(
-            parent_tree.as_ref(),
-            Some(&tree),
-            Some(&mut diff_opts),
-        )?;
-
         let stats = diff.stats()?;
-        Ok((stats.insertions() as u32, stats.deletions() as u32))
+        let insertions = stats.insertions() as u32;
+        let deletions = stats.deletions() as u32;
+
+        Ok(CommitInfo {
+            oid,
+            message,
+            author,
+            timestamp,
+            is_ai_generated: is_ai,
+            ai_source,
+            files_changed,
+            insertions,
+            deletions,
+        })
     }
 
     /// Returns the text content of a file at HEAD, or `None` if the file does not exist.
