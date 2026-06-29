@@ -52,7 +52,7 @@ impl Store {
     }
 
     pub fn save_receipt(&self, receipt: &ChangeReceipt) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let json = serde_json::to_string(receipt)?;
 
         conn.execute(
@@ -75,7 +75,7 @@ impl Store {
     }
 
     pub fn get_receipt(&self, commit_oid: &str) -> Result<Option<ChangeReceipt>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT receipt_json FROM change_receipts WHERE commit_oid = ?1",
         )?;
@@ -95,7 +95,7 @@ impl Store {
     }
 
     pub fn recent_receipts(&self, limit: usize) -> Result<Vec<ChangeReceipt>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT receipt_json FROM change_receipts ORDER BY timestamp DESC LIMIT ?1",
         )?;
@@ -116,7 +116,7 @@ impl Store {
     }
 
     pub fn receipts_for_file(&self, file_path: &str) -> Result<Vec<ChangeReceipt>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT receipt_json FROM change_receipts
              WHERE receipt_json LIKE ?1
@@ -140,7 +140,7 @@ impl Store {
     }
 
     pub fn save_event(&self, event: &WorkflowEvent) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let json = serde_json::to_string(event)?;
 
         conn.execute(
@@ -159,7 +159,7 @@ impl Store {
     }
 
     pub fn events_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<WorkflowEvent>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT details_json FROM workflow_events
              WHERE timestamp >= ?1
