@@ -245,6 +245,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "git2",
+ "once_cell",
  "regex",
  "rusqlite",
  "serde",
