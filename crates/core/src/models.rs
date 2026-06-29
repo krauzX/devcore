@@ -162,44 +162,12 @@ pub enum EventType {
     GitCommit,
     /// A file was edited in the editor
     FileEdit,
-    /// A terminal command was executed
-    TerminalCommand,
     /// A build was triggered
     BuildRun,
     /// Tests were executed
     TestRun,
     /// An interaction with an AI assistant occurred
     AiInteraction,
-    /// No significant activity detected
-    Idle,
 }
 
-/// A summary report of developer workflow activity over a time period.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WorkflowReport {
-    /// Start of the reporting period
-    pub period_start: DateTime<Utc>,
-    /// End of the reporting period
-    pub period_end: DateTime<Utc>,
-    /// Total number of events in the period
-    pub total_events: u64,
-    /// Time spent in each activity category (in minutes)
-    pub time_by_category: std::collections::HashMap<String, f64>,
-    /// Identified workflow bottlenecks
-    pub bottlenecks: Vec<Bottleneck>,
-    /// Suggestions for improving workflow efficiency
-    pub suggestions: Vec<String>,
-}
 
-/// A workflow bottleneck where the developer spent disproportionate time.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Bottleneck {
-    /// Activity category (e.g., "BuildRun", "TestRun")
-    pub category: String,
-    /// Time spent in this category (in minutes)
-    pub time_minutes: f64,
-    /// Percentage of total workflow time
-    pub percentage: f64,
-    /// Suggested action to reduce this bottleneck
-    pub suggestion: String,
-}

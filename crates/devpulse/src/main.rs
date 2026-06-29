@@ -215,7 +215,7 @@ fn cmd_record_event(project_root: &Path, kind: &str, minutes: u32, description: 
         "review" | "reviewing" => EventType::FileEdit,
         "build" | "deploy" => EventType::BuildRun,
         "test" | "testing" => EventType::TestRun,
-        "search" | "looking" => EventType::Idle,
+        "search" | "looking" => EventType::FileEdit,
         "meeting" | "slack" => EventType::AiInteraction,
         "ai" | "cursor" | "copilot" => EventType::AiInteraction,
         _ => EventType::FileEdit,
