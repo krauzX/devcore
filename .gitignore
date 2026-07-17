@@ -1,3 +1,4 @@
 /.devcore/
 /target
 .github/workflows/
+*.tgz
