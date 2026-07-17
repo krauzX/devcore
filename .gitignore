@@ -1,2 +1,3 @@
 /.devcore/
 /target
+.github/workflows/
