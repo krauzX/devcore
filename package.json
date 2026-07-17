@@ -3,14 +3,12 @@
   "version": "0.1.0",
   "description": "Track why code changed, what it touches, and what could break",
   "bin": {
-    "shipforge": "bin/shipforge",
-    "codetrail": "bin/codetrail",
-    "devpulse": "bin/devpulse"
+    "devcore-shipforge": "bin/shipforge",
+    "devcore-codetrail": "bin/codetrail",
+    "devcore-devpulse": "bin/devpulse"
   },
   "scripts": {
-    "postinstall": "node install.js",
-    "build": "cargo build --release",
-    "prepublishOnly": "node scripts/build-and-pack.js"
+    "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
     "git",
@@ -18,21 +16,25 @@
     "blast-radius",
     "change-tracking",
     "developer-tools",
-    "cli"
+    "cli",
+    "rust"
   ],
   "author": "krauzX",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/krauzX/devcore.git"
+    "url": "https://github.com/krauzX/devcore.git",
+    "private": true
   },
   "engines": {
     "node": ">=16"
   },
   "files": [
     "bin/",
-    "install.js",
+    "scripts/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "os": ["win32", "darwin", "linux"],
+  "cpu": ["x64", "arm64"]
 }

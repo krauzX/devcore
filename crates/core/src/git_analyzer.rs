@@ -74,8 +74,10 @@ impl GitAnalyzer {
         let author = commit.author().name().unwrap_or("unknown").to_string();
         let timestamp = DateTime::from_timestamp(commit.time().seconds(), 0).unwrap_or_default();
 
-        let ai_source = AiSource::from_commit_message(&message);
-        let is_ai = ai_source.is_some();
+        let detector = crate::ai_detector::AiDetector::new();
+        let detection = detector.detect(&message, &author);
+        let ai_source = detection.as_ref().map(|d| d.source.clone());
+        let is_ai = detection.is_some();
 
         let tree = commit.tree()?;
         let parent_tree = commit.parent(0).ok().map(|p| p.tree()).transpose()?;

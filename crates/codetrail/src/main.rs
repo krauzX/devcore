@@ -183,7 +183,9 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
                 if risk.file == file_path {
                     let sev = match risk.severity {
                         RiskSeverity::Low => format!("[{:?}]", risk.severity).green().to_string(),
-                        RiskSeverity::Medium => format!("[{:?}]", risk.severity).yellow().to_string(),
+                        RiskSeverity::Medium => {
+                            format!("[{:?}]", risk.severity).yellow().to_string()
+                        }
                         RiskSeverity::High | RiskSeverity::Critical => {
                             format!("[{:?}]", risk.severity).red().to_string()
                         }
@@ -312,7 +314,9 @@ fn cmd_blast(project_root: &Path, file_path: &str) -> Result<()> {
         (1..=3, 0) => "LOW — few direct dependents".green(),
         (1..=3, _) => "MEDIUM — some transitive impact".yellow(),
         (4..=10, _) => "HIGH — many dependents, proceed with caution".red(),
-        _ => "CRITICAL — heavily depended upon, extreme caution".red().bold(),
+        _ => "CRITICAL — heavily depended upon, extreme caution"
+            .red()
+            .bold(),
     };
 
     println!("\nRisk Level: {}", risk_level);
