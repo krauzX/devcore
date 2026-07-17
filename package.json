@@ -1,11 +1,11 @@
 {
-  "name": "devcore",
-  "version": "0.1.0",
+  "name": "@krauz/devcore",
+  "version": "0.1.1",
   "description": "Track why code changed, what it touches, and what could break",
   "bin": {
-    "devcore-shipforge": "bin/shipforge",
-    "devcore-codetrail": "bin/codetrail",
-    "devcore-devpulse": "bin/devpulse"
+    "shipforge": "bin/shipforge.cmd",
+    "codetrail": "bin/codetrail.cmd",
+    "devpulse": "bin/devpulse.cmd"
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.js"
@@ -35,6 +35,13 @@
     "README.md",
     "LICENSE"
   ],
-  "os": ["win32", "darwin", "linux"],
-  "cpu": ["x64", "arm64"]
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
 }
