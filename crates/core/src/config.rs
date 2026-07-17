@@ -1,10 +1,11 @@
+use crate::error::DevCoreError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Project-level configuration for DevCore tools.
 ///
 /// Loaded from `.devcore/config.toml` in the project root. Falls back to
-/// sensible defaults when the file is missing or malformed.
+/// sensible defaults when the file is missing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DevCoreConfig {
     #[serde(default = "default_extensions")]
@@ -53,16 +54,44 @@ impl Default for DevCoreConfig {
 }
 
 impl DevCoreConfig {
-    /// Loads configuration from `.devcore/config.toml`, falling back to defaults.
-    pub fn load(project_root: &Path) -> Self {
+    /// Loads configuration from `.devcore/config.toml`.
+    ///
+    /// Returns defaults if the file does not exist. Returns an error if the
+    /// file exists but cannot be parsed.
+    pub fn load(project_root: &Path) -> Result<Self, DevCoreError> {
         let config_path = project_root.join(".devcore").join("config.toml");
-        if config_path.exists() {
-            if let Ok(content) = std::fs::read_to_string(&config_path) {
-                if let Ok(config) = toml::from_str(&content) {
-                    return config;
-                }
-            }
+        if !config_path.exists() {
+            return Ok(Self::default());
         }
-        Self::default()
+        let content = std::fs::read_to_string(&config_path)?;
+        let config: DevCoreConfig = toml::from_str(&content)?;
+        config.validate()?;
+        Ok(config)
+    }
+
+    /// Saves this configuration to `.devcore/config.toml`.
+    pub fn save(&self, project_root: &Path) -> Result<(), DevCoreError> {
+        let config_dir = project_root.join(".devcore");
+        std::fs::create_dir_all(&config_dir)?;
+        let config_path = config_dir.join("config.toml");
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| DevCoreError::Config(e.to_string()))?;
+        std::fs::write(&config_path, content)?;
+        Ok(())
+    }
+
+    /// Validates the configuration and returns warnings for questionable values.
+    pub fn validate(&self) -> Result<(), DevCoreError> {
+        if self.source_extensions.is_empty() {
+            return Err(DevCoreError::Config(
+                "source_extensions list is empty — at least one extension is required".into(),
+            ));
+        }
+        if self.max_file_size_bytes == 0 {
+            return Err(DevCoreError::Config(
+                "max_file_size_bytes is 0 — files will be skipped".into(),
+            ));
+        }
+        Ok(())
     }
 }

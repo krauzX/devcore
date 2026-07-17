@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// Identifies the AI tool or assistant that authored or assisted with a commit.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -35,6 +36,19 @@ impl AiSource {
             Some(Self::Aider)
         } else {
             None
+        }
+    }
+}
+
+impl fmt::Display for AiSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AiSource::Cursor => write!(f, "Cursor"),
+            AiSource::Copilot => write!(f, "GitHub Copilot"),
+            AiSource::ClaudeCode => write!(f, "Claude Code"),
+            AiSource::Windsurf => write!(f, "Windsurf"),
+            AiSource::Aider => write!(f, "Aider"),
+            AiSource::Unknown => write!(f, "Unknown AI"),
         }
     }
 }
@@ -92,6 +106,17 @@ pub enum ChangeStatus {
     Renamed,
 }
 
+impl fmt::Display for ChangeStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ChangeStatus::Added => write!(f, "Added"),
+            ChangeStatus::Modified => write!(f, "Modified"),
+            ChangeStatus::Deleted => write!(f, "Deleted"),
+            ChangeStatus::Renamed => write!(f, "Renamed"),
+        }
+    }
+}
+
 /// A notable decision recorded during development.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Decision {
@@ -129,6 +154,17 @@ pub enum RiskSeverity {
     High,
     /// Critical risk that likely breaks functionality
     Critical,
+}
+
+impl fmt::Display for RiskSeverity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RiskSeverity::Low => write!(f, "Low"),
+            RiskSeverity::Medium => write!(f, "Medium"),
+            RiskSeverity::High => write!(f, "High"),
+            RiskSeverity::Critical => write!(f, "Critical"),
+        }
+    }
 }
 
 /// Estimated downstream impact of a change, measured by dependent files and depth.

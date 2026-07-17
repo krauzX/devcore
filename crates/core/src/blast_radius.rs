@@ -1,6 +1,6 @@
 use crate::config::DevCoreConfig;
+use crate::error::DevCoreError;
 use crate::models::BlastRadius;
-use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
@@ -24,7 +24,7 @@ impl BlastRadiusAnalyzer {
 
     /// Scans the project for source files and builds the import dependency graph.
     /// Supports TypeScript, JavaScript, Rust, Go, and Python import syntax.
-    pub fn build_graph(&mut self) -> Result<()> {
+    pub fn build_graph(&mut self) -> Result<(), DevCoreError> {
         let files = self.collect_source_files()?;
         self.import_graph.clear();
         self.reverse_index.clear();
@@ -122,8 +122,8 @@ impl BlastRadiusAnalyzer {
         dependents
     }
 
-    fn collect_source_files(&self) -> Result<Vec<PathBuf>> {
-        let config = DevCoreConfig::load(&self.root);
+    fn collect_source_files(&self) -> Result<Vec<PathBuf>, DevCoreError> {
+        let config = DevCoreConfig::load(&self.root)?;
         let mut files = Vec::new();
 
         for entry in walkdir::WalkDir::new(&self.root)

@@ -177,7 +177,8 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
 
     // Show blame info
     if let Ok(blame) = git.blame_file(file_path) {
-        let mut author_counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut author_counts: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         for line in &blame {
             *author_counts.entry(line.author.clone()).or_insert(0) += 1;
         }
@@ -327,8 +328,12 @@ fn cmd_ai_log(limit: usize, source_filter: Option<&str>) -> Result<()> {
     let _detector = AiDetector::new();
     let total_commits = store.recent_receipts(limit * 3)?.len();
     let ai_count = filtered.len();
-    println!("Showing {} of {} total AI receipts ({} total commits)",
-        ai_count, store.recent_receipts(1000)?.len(), total_commits);
+    println!(
+        "Showing {} of {} total AI receipts ({} total commits)",
+        ai_count,
+        store.recent_receipts(1000)?.len(),
+        total_commits
+    );
 
     println!("AI-Generated Change Receipts");
     println!("{}", "=".repeat(80));

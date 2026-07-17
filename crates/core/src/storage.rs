@@ -1,5 +1,5 @@
+use crate::error::DevCoreError;
 use crate::models::*;
-use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -44,13 +44,18 @@ pub struct Store {
 impl Store {
     /// Opens or creates the database at `.devcore/devcore.db` inside the project root.
     /// Creates the `.devcore` directory and schema if they do not exist.
-    pub fn open(project_root: &Path) -> Result<Self> {
+    pub fn open(project_root: &Path) -> Result<Self, DevCoreError> {
         let db_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&db_dir)?;
         let db_path = db_dir.join("devcore.db");
 
-        let conn = Connection::open(&db_path)
-            .with_context(|| format!("Failed to open database at {}", db_path.display()))?;
+        let conn = Connection::open(&db_path).map_err(|e| {
+            DevCoreError::Config(format!(
+                "Failed to open database at {}: {}",
+                db_path.display(),
+                e
+            ))
+        })?;
 
         conn.execute_batch(SCHEMA)?;
 
@@ -61,11 +66,12 @@ impl Store {
     }
 
     /// Persists a change receipt, replacing any existing receipt with the same ID.
-    pub fn save_receipt(&self, receipt: &ChangeReceipt) -> Result<()> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+    pub fn save_receipt(&self, receipt: &ChangeReceipt) -> Result<(), DevCoreError> {
+        let conn = self.conn.lock().map_err(|e| {
+            DevCoreError::Io(std::io::Error::other(
+                format!("Database lock poisoned: {}", e),
+            ))
+        })?;
         let json = serde_json::to_string(receipt)?;
 
         conn.execute(
@@ -89,11 +95,12 @@ impl Store {
 
     /// Retrieves a change receipt by its associated commit OID.
     /// Returns `Ok(None)` if no receipt exists for the given OID.
-    pub fn get_receipt(&self, commit_oid: &str) -> Result<Option<ChangeReceipt>> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+    pub fn get_receipt(&self, commit_oid: &str) -> Result<Option<ChangeReceipt>, DevCoreError> {
+        let conn = self.conn.lock().map_err(|e| {
+            DevCoreError::Io(std::io::Error::other(
+                format!("Database lock poisoned: {}", e),
+            ))
+        })?;
         let mut stmt =
             conn.prepare("SELECT receipt_json FROM change_receipts WHERE commit_oid = ?1")?;
 
@@ -112,11 +119,12 @@ impl Store {
     }
 
     /// Returns the most recent change receipts, ordered by timestamp descending.
-    pub fn recent_receipts(&self, limit: usize) -> Result<Vec<ChangeReceipt>> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+    pub fn recent_receipts(&self, limit: usize) -> Result<Vec<ChangeReceipt>, DevCoreError> {
+        let conn = self.conn.lock().map_err(|e| {
+            DevCoreError::Io(std::io::Error::other(
+                format!("Database lock poisoned: {}", e),
+            ))
+        })?;
         let mut stmt = conn
             .prepare("SELECT receipt_json FROM change_receipts ORDER BY timestamp DESC LIMIT ?1")?;
 
@@ -136,11 +144,12 @@ impl Store {
     }
 
     /// Returns all change receipts that touch the given file path, ordered by timestamp descending.
-    pub fn receipts_for_file(&self, file_path: &str) -> Result<Vec<ChangeReceipt>> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+    pub fn receipts_for_file(&self, file_path: &str) -> Result<Vec<ChangeReceipt>, DevCoreError> {
+        let conn = self.conn.lock().map_err(|e| {
+            DevCoreError::Io(std::io::Error::other(
+                format!("Database lock poisoned: {}", e),
+            ))
+        })?;
         let mut stmt = conn.prepare(
             "SELECT receipt_json FROM change_receipts
              WHERE receipt_json LIKE ?1 ESCAPE '\\'
@@ -165,11 +174,12 @@ impl Store {
     }
 
     /// Persists a workflow event, replacing any existing event with the same ID.
-    pub fn save_event(&self, event: &WorkflowEvent) -> Result<()> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+    pub fn save_event(&self, event: &WorkflowEvent) -> Result<(), DevCoreError> {
+        let conn = self.conn.lock().map_err(|e| {
+            DevCoreError::Io(std::io::Error::other(
+                format!("Database lock poisoned: {}", e),
+            ))
+        })?;
         let json = serde_json::to_string(event)?;
 
         conn.execute(
@@ -188,11 +198,15 @@ impl Store {
     }
 
     /// Returns all workflow events since the given timestamp, ordered by timestamp ascending.
-    pub fn events_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<WorkflowEvent>> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Database lock poisoned: {}", e))?;
+    pub fn events_since(
+        &self,
+        since: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<WorkflowEvent>, DevCoreError> {
+        let conn = self.conn.lock().map_err(|e| {
+            DevCoreError::Io(std::io::Error::other(
+                format!("Database lock poisoned: {}", e),
+            ))
+        })?;
         let mut stmt = conn.prepare(
             "SELECT details_json FROM workflow_events
              WHERE timestamp >= ?1

@@ -242,7 +242,6 @@ dependencies = [
 name = "devcore-core"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "git2",
  "once_cell",
