@@ -122,6 +122,7 @@ fn cmd_init(path: &Path) -> Result<()> {
 }
 
 fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()> {
+    let git = GitAnalyzer::open(project_root)?;
     let store = Store::open(project_root)?;
     let receipts = store.receipts_for_file(file_path)?;
 
@@ -170,6 +171,22 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
                 if risk.file == file_path {
                     println!("    [{:?}] {}", risk.severity, risk.description);
                 }
+            }
+        }
+    }
+
+    // Show blame info
+    if let Ok(blame) = git.blame_file(file_path) {
+        let mut author_counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for line in &blame {
+            *author_counts.entry(line.author.clone()).or_insert(0) += 1;
+        }
+        if !author_counts.is_empty() {
+            println!("\n--- Blame Summary ---");
+            let mut sorted: Vec<_> = author_counts.into_iter().collect();
+            sorted.sort_by(|a, b| b.1.cmp(&a.1));
+            for (author, count) in sorted.iter().take(5) {
+                println!("  {:>4} lines  {}", count, author);
             }
         }
     }
@@ -306,6 +323,12 @@ fn cmd_ai_log(limit: usize, source_filter: Option<&str>) -> Result<()> {
         })
         .take(limit)
         .collect();
+
+    let _detector = AiDetector::new();
+    let total_commits = store.recent_receipts(limit * 3)?.len();
+    let ai_count = filtered.len();
+    println!("Showing {} of {} total AI receipts ({} total commits)",
+        ai_count, store.recent_receipts(1000)?.len(), total_commits);
 
     println!("AI-Generated Change Receipts");
     println!("{}", "=".repeat(80));

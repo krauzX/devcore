@@ -255,6 +255,7 @@ fn cmd_log(limit: usize, ai_only: bool) -> Result<()> {
 }
 
 fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
+    let git = GitAnalyzer::open(project_root)?;
     let store = Store::open(project_root)?;
     let receipts = store.recent_receipts(100)?;
 
@@ -307,6 +308,17 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
 
     if br.direct_dependents.is_empty() && br.indirect_dependents.is_empty() {
         println!("\nNo dependents found — safe to modify.");
+    }
+
+    // Show file content at HEAD
+    if let Ok(Some(content)) = git.file_content(file_path) {
+        println!("\n--- File Content (first 10 lines) ---");
+        for (i, line) in content.lines().take(10).enumerate() {
+            println!("  {:>3}: {}", i + 1, line);
+        }
+        if content.lines().count() > 10 {
+            println!("  ... ({} more lines)", content.lines().count() - 10);
+        }
     }
 
     Ok(())
