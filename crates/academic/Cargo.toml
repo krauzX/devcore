@@ -1,0 +1,13 @@
+[package]
+name = "devcore-academic"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+devcore-core = { path = "../core" }
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+rusqlite.workspace = true
+uuid.workspace = true
