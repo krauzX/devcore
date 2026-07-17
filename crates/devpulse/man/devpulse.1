@@ -1,0 +1,47 @@
+.TH DEVPULSE 1 "2026-06-29" "DevCore 0.1.0" "User Commands"
+.SH NAME
+devpulse \- developer workflow analyzer
+.SH SYNOPSIS
+.B devpulse
+.RI [ COMMAND ]
+.RI [ OPTIONS ]
+.SH DESCRIPTION
+DevPulse monitors your development workflow and generates reports showing exactly where time is spent: coding, reviewing, searching, building, or context-switching.
+.SH COMMANDS
+.TP
+.B init [\-\-path PATH]
+Initialize DevPulse in the current project.
+.TP
+.B report [\-\-period PERIOD] [\-\-path PATH]
+Generate a workflow report for a time period.
+.I PERIOD
+can be
+.BR day ,
+.BR week ,
+or
+.BR month .
+.TP
+.B event \-k KIND \-m MINUTES [\-d DESCRIPTION] [\-\-path PATH]
+Record a manual event. KIND is one of:
+.BR coding ,
+.BR review ,
+.BR build ,
+.BR search ,
+.BR meeting ,
+.BR ai .
+.TP
+.B suggest [\-\-path PATH]
+Show suggestions for reducing time waste based on recent activity.
+.TP
+.B chart [\-\-period PERIOD] [\-\-path PATH]
+Show time breakdown as a visual chart by hour of day.
+.SH OPTIONS
+.TP
+.BR \-p ", " \-\-path " " PATH
+Project root directory (default: current directory).
+.SH FILES
+.TP
+.I .devcore/devcore.db
+SQLite database storing workflow events.
+.SH SEE ALSO
+shipforge(1), codetrail(1)

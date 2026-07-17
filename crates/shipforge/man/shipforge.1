@@ -1,0 +1,35 @@
+.TH SHIPFORGE 1 "2026-06-29" "DevCore 0.1.0" "User Commands"
+.SH NAME
+shipforge \- generate structured change receipts for AI-generated code
+.SH SYNOPSIS
+.B shipforge
+.RI [ COMMAND ]
+.RI [ OPTIONS ]
+.SH COMMANDS
+.TP
+.B init
+Initialize ShipForge in the current project.
+.TP
+.B receipt [\-c OID]
+Generate a change receipt for HEAD or a specific commit.
+.TP
+.B log [\-n LIMIT] [\-\-ai\-only]
+List recent change receipts.
+.TP
+.B show OID [\-f FORMAT]
+Display a stored change receipt.
+.TP
+.B explain FILE
+Show why a file exists and what depends on it.
+.TP
+.B blast FILE
+Show blast radius for a file change.
+.SH FILES
+.TP
+.I .devcore/devcore.db
+SQLite database storing change receipts.
+.TP
+.I .devcore/config.toml
+Project configuration (optional).
+.SH SEE ALSO
+codetrail(1), devpulse(1)

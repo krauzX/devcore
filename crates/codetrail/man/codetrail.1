@@ -1,0 +1,39 @@
+.TH CODETRAIL 1 "2026-06-29" "DevCore 0.1.0" "User Commands"
+.SH NAME
+codetrail \- change receipts and blast radius analysis for AI-generated code
+.SH SYNOPSIS
+.B codetrail
+.RI [ COMMAND ]
+.RI [ OPTIONS ]
+.SH COMMANDS
+.TP
+.B init [\-\-path PATH]
+Initialize CodeTrail in the current project.
+.TP
+.B history FILE [\-n LIMIT] [\-\-path PATH]
+Show change history for a file.
+.TP
+.B explain FILE [\-\-path PATH]
+Explain why a file exists, its decisions, and dependents.
+.TP
+.B blast FILE [\-\-path PATH]
+Show blast radius for a file (direct and indirect dependents).
+.TP
+.B ai\-log [\-n LIMIT] [\-\-source SOURCE]
+Show AI-generated change receipts. Filter by source (cursor, copilot, claude, etc.).
+.TP
+.B risk [\-\-path PATH]
+Show risk summary for the project (AI ratio, high-risk files).
+.TP
+.B hotspots [\-\-path PATH] [\-n LIMIT]
+Find files with highest blast radius (most depended upon).
+.SH OPTIONS
+.TP
+.BR \-p ", " \-\-path " " PATH
+Project root directory (default: current directory).
+.SH FILES
+.TP
+.I .devcore/devcore.db
+SQLite database storing change receipts.
+.SH SEE ALSO
+shipforge(1), devpulse(1)
