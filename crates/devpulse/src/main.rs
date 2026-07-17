@@ -71,13 +71,20 @@ enum Commands {
     },
 }
 
-fn main() -> Result<()> {
+fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
     let cli = Cli::parse();
 
+    if let Err(e) = run(cli) {
+        eprintln!("error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Commands::Init { path } => cmd_init(&path),
         Commands::Report { period, path } => cmd_report(&path, &period),
