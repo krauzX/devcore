@@ -1,3 +1,5 @@
+mod tui;
+
 use anyhow::Result;
 use chrono::{DateTime, Duration, Timelike, Utc};
 use clap::{Parser, Subcommand};
@@ -70,6 +72,12 @@ enum Commands {
         #[arg(short, long, default_value = ".")]
         path: PathBuf,
     },
+
+    /// Launch interactive TUI dashboard
+    Dashboard {
+        #[arg(short, long, default_value = ".")]
+        path: PathBuf,
+    },
 }
 
 fn main() {
@@ -97,6 +105,7 @@ fn run(cli: Cli) -> Result<()> {
         } => cmd_record_event(&path, kind.as_deref(), minutes, &description),
         Commands::Suggest { path } => cmd_suggest(&path),
         Commands::Chart { period, path } => cmd_chart(&path, &period),
+        Commands::Dashboard { path } => cmd_dashboard(&path),
     }
 }
 
@@ -472,4 +481,10 @@ fn parse_period_hours(period: &str) -> i64 {
         "month" | "30d" => 720,
         _ => 168,
     }
+}
+
+fn cmd_dashboard(project_root: &Path) -> Result<()> {
+    let mut app = tui::App::new(project_root)?;
+    app.run()?;
+    Ok(())
 }

@@ -21,6 +21,8 @@ colored.workspace = true
 comfy-table.workspace = true
 indicatif.workspace = true
 inquire.workspace = true
+ratatui = "0.29"
+crossterm = { version = "0.28", features = ["event-stream"] }
 
 [dev-dependencies]
 tempfile = "3"
