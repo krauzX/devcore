@@ -23,6 +23,9 @@ indicatif.workspace = true
 inquire.workspace = true
 ratatui = "0.29"
 crossterm = { version = "0.28", features = ["event-stream"] }
+sysinfo = "0.33"
+walkdir = "2"
+dirs = "6"
 
 [dev-dependencies]
 tempfile = "3"

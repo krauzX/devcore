@@ -1,3 +1,4 @@
+mod monitor;
 mod tui;
 
 use anyhow::Result;
@@ -78,6 +79,13 @@ enum Commands {
         #[arg(short, long, default_value = ".")]
         path: PathBuf,
     },
+
+    /// Generate system-wide weekly productivity report
+    Weekly {
+        /// Project root to scan (default: scans ~/projects, ~/code, ~/dev, etc.)
+        #[arg(short, long)]
+        path: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -106,6 +114,7 @@ fn run(cli: Cli) -> Result<()> {
         Commands::Suggest { path } => cmd_suggest(&path),
         Commands::Chart { period, path } => cmd_chart(&path, &period),
         Commands::Dashboard { path } => cmd_dashboard(&path),
+        Commands::Weekly { path } => cmd_weekly(path.as_deref()),
     }
 }
 
@@ -486,5 +495,11 @@ fn parse_period_hours(period: &str) -> i64 {
 fn cmd_dashboard(project_root: &Path) -> Result<()> {
     let mut app = tui::App::new(project_root)?;
     app.run()?;
+    Ok(())
+}
+
+fn cmd_weekly(project_root: Option<&Path>) -> Result<()> {
+    let report = monitor::WeeklyReport::generate(project_root)?;
+    report.print();
     Ok(())
 }
