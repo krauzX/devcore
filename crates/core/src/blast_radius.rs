@@ -150,7 +150,8 @@ impl BlastRadiusAnalyzer {
                         }
 
                         let rel = self.relative_path(&path);
-                        let excluded = self.config
+                        let excluded = self
+                            .config
                             .exclude_dirs
                             .iter()
                             .any(|d| rel.starts_with(d.as_str()));

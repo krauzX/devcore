@@ -74,8 +74,8 @@ impl DevCoreConfig {
         let config_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&config_dir)?;
         let config_path = config_dir.join("config.toml");
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| DevCoreError::Config(e.to_string()))?;
+        let content =
+            toml::to_string_pretty(self).map_err(|e| DevCoreError::Config(e.to_string()))?;
         std::fs::write(&config_path, content)?;
         Ok(())
     }

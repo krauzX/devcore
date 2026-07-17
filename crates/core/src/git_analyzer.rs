@@ -14,16 +14,21 @@ impl GitAnalyzer {
     /// Returns an error if the path is not a valid git repository.
     pub fn open(path: &Path) -> Result<Self, DevCoreError> {
         let repo = Repository::open(path).map_err(|e| {
-            DevCoreError::Config(format!("Failed to open git repo at {}: {}", path.display(), e))
+            DevCoreError::Config(format!(
+                "Failed to open git repo at {}: {}",
+                path.display(),
+                e
+            ))
         })?;
         Ok(Self { repo })
     }
 
     /// Returns the OID of the current HEAD commit as a hex string.
     pub fn head_oid(&self) -> Result<String, DevCoreError> {
-        let head = self.repo.head().map_err(|_| {
-            DevCoreError::NotFound("No HEAD reference found".into())
-        })?;
+        let head = self
+            .repo
+            .head()
+            .map_err(|_| DevCoreError::NotFound("No HEAD reference found".into()))?;
         Ok(head
             .target()
             .ok_or_else(|| DevCoreError::NotFound("HEAD is not a direct reference".into()))?
@@ -132,7 +137,10 @@ impl GitAnalyzer {
         };
         let obj = entry.to_object(&self.repo)?;
         let blob = obj.into_blob().map_err(|e| {
-            DevCoreError::Git(git2::Error::from_str(&format!("Failed to convert to blob: {:?}", e)))
+            DevCoreError::Git(git2::Error::from_str(&format!(
+                "Failed to convert to blob: {:?}",
+                e
+            )))
         })?;
         Ok(Some(String::from_utf8_lossy(blob.content()).to_string()))
     }

@@ -5,7 +5,11 @@ use tempfile::TempDir;
 
 fn setup_project(dir: &std::path::Path, n_files: usize) {
     for i in 0..n_files {
-        let content = format!("import './file_{}';\nexport function f{}() {{}}", (i + 1) % n_files, i);
+        let content = format!(
+            "import './file_{}';\nexport function f{}() {{}}",
+            (i + 1) % n_files,
+            i
+        );
         fs::write(dir.join(format!("file_{}.ts", i)), content).unwrap();
     }
 }
@@ -41,5 +45,10 @@ fn bench_build_graph(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_blast_radius_small, bench_blast_radius_large, bench_build_graph);
+criterion_group!(
+    benches,
+    bench_blast_radius_small,
+    bench_blast_radius_large,
+    bench_build_graph
+);
 criterion_main!(benches);
