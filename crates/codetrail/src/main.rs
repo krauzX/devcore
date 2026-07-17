@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use devcore_core::*;
 use std::path::{Path, PathBuf};
 
@@ -144,7 +145,11 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
 
     for r in receipts.iter().take(limit) {
         let short = &r.commit_oid[..12.min(r.commit_oid.len())];
-        let ai_marker = if r.is_ai_generated { " [AI]" } else { "" };
+        let ai_marker = if r.is_ai_generated {
+            " [AI]".yellow().to_string()
+        } else {
+            "".to_string()
+        };
 
         println!(
             "\n  {}{} — {}",
@@ -161,10 +166,10 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
         // Show this file's specific change
         if let Some(fc) = r.files_changed.iter().find(|f| f.path == file_path) {
             let marker = match fc.status {
-                ChangeStatus::Added => "+",
-                ChangeStatus::Deleted => "-",
-                ChangeStatus::Renamed => "~",
-                ChangeStatus::Modified => "M",
+                ChangeStatus::Added => "+".green().to_string(),
+                ChangeStatus::Deleted => "-".red().to_string(),
+                ChangeStatus::Renamed => "~".blue().to_string(),
+                ChangeStatus::Modified => "M".yellow().to_string(),
             };
             println!(
                 "  Status: {} ({}+/{}-)",
@@ -176,7 +181,14 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
             println!("  Risks:");
             for risk in &r.risks {
                 if risk.file == file_path {
-                    println!("    [{:?}] {}", risk.severity, risk.description);
+                    let sev = match risk.severity {
+                        RiskSeverity::Low => format!("[{:?}]", risk.severity).green().to_string(),
+                        RiskSeverity::Medium => format!("[{:?}]", risk.severity).yellow().to_string(),
+                        RiskSeverity::High | RiskSeverity::Critical => {
+                            format!("[{:?}]", risk.severity).red().to_string()
+                        }
+                    };
+                    println!("    {} {}", sev, risk.description);
                 }
             }
         }
@@ -284,23 +296,23 @@ fn cmd_blast(project_root: &Path, file_path: &str) -> Result<()> {
     if !br.direct_dependents.is_empty() {
         println!("\nDirect (would break immediately):");
         for d in &br.direct_dependents {
-            println!("  ⚠ {}", d);
+            println!("  {} {}", "⚠".red(), d.red());
         }
     }
 
     if !br.indirect_dependents.is_empty() {
         println!("\nIndirect (may break transitively):");
         for d in &br.indirect_dependents {
-            println!("  ⚡ {}", d);
+            println!("  {} {}", "⚡".yellow(), d.yellow());
         }
     }
 
     let risk_level = match (br.direct_dependents.len(), br.indirect_dependents.len()) {
-        (0, 0) => "LOW — isolated file, safe to change",
-        (1..=3, 0) => "LOW — few direct dependents",
-        (1..=3, _) => "MEDIUM — some transitive impact",
-        (4..=10, _) => "HIGH — many dependents, proceed with caution",
-        _ => "CRITICAL — heavily depended upon, extreme caution",
+        (0, 0) => "LOW — isolated file, safe to change".green(),
+        (1..=3, 0) => "LOW — few direct dependents".green(),
+        (1..=3, _) => "MEDIUM — some transitive impact".yellow(),
+        (4..=10, _) => "HIGH — many dependents, proceed with caution".red(),
+        _ => "CRITICAL — heavily depended upon, extreme caution".red().bold(),
     };
 
     println!("\nRisk Level: {}", risk_level);
@@ -363,10 +375,10 @@ fn cmd_ai_log(limit: usize, source_filter: Option<&str>) -> Result<()> {
             .map(|s| format!("{:?}", s))
             .unwrap_or_else(|| "?".to_string());
         let risk = match r.risk_score {
-            0..=3 => "LOW",
-            4..=6 => "MED",
-            7..=8 => "HIGH",
-            _ => "CRIT",
+            0..=3 => "LOW".green().to_string(),
+            4..=6 => "MED".yellow().to_string(),
+            7..=8 => "HIGH".red().to_string(),
+            _ => "CRIT".red().bold().to_string(),
         };
         let files = format!("{}", r.files_changed.len());
         let intent = if r.intent.len() > 40 {
@@ -410,7 +422,7 @@ fn cmd_risk(project_root: &Path) -> Result<()> {
         }
     );
     println!("Human-authored:     {}", human_count);
-    println!("High-risk (≥7):     {}", high_risk);
+    println!("High-risk (≥7):     {}", high_risk.to_string().red());
     println!("Average risk score: {:.1}/10", avg_risk);
 
     // Files with most changes
@@ -467,7 +479,14 @@ fn cmd_hotspots(project_root: &Path, limit: usize) -> Result<()> {
     for (file, direct, indirect) in scored.iter().take(limit) {
         let total = direct + indirect;
         let bar: String = "█".repeat(total.min(30));
-        println!("  {:>3}  {:<50} {}", total, file, bar);
+        let bar_colored = if total >= 10 {
+            bar.red().to_string()
+        } else if total >= 5 {
+            bar.yellow().to_string()
+        } else {
+            bar.green().to_string()
+        };
+        println!("  {:>3}  {:<50} {}", total, file, bar_colored);
     }
 
     Ok(())

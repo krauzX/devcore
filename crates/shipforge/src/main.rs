@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::Utc;
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use devcore_core::*;
 use std::path::{Path, PathBuf};
 
@@ -147,8 +148,11 @@ fn cmd_receipt(project_root: &Path, commit_oid: Option<&str>) -> Result<()> {
     let ai_source = info.ai_source.clone();
 
     // Build blast radius
+    let sp = indicatif::ProgressBar::new_spinner();
+    sp.set_message("Building blast radius graph...");
     let mut analyzer = BlastRadiusAnalyzer::new(project_root);
     analyzer.build_graph()?;
+    sp.finish_and_clear();
 
     let mut all_blast = devcore_core::BlastRadius::default();
     for fc in &info.files_changed {
@@ -252,9 +256,20 @@ fn cmd_log(limit: usize, ai_only: bool) -> Result<()> {
             r.intent.clone()
         };
 
+        let source_colored = if r.is_ai_generated {
+            source.yellow().to_string()
+        } else {
+            source.green().to_string()
+        };
+        let risk_colored = match r.risk_score {
+            0..=3 => risk_bar.green().to_string(),
+            4..=6 => risk_bar.yellow().to_string(),
+            _ => risk_bar.red().to_string(),
+        };
+
         println!(
             "{:<12}  {:<8}  {:<6}  {}",
-            short_oid, source, risk_bar, intent
+            short_oid, source_colored, risk_colored, intent
         );
     }
 
@@ -447,14 +462,13 @@ fn identify_risks(info: &CommitInfo, blast: &BlastRadius) -> Vec<Risk> {
 
 fn print_receipt(receipt: &ChangeReceipt) {
     let short_oid = &receipt.commit_oid[..12.min(receipt.commit_oid.len())];
-    let risk_bar = match receipt.risk_score {
-        0..=3 => "LOW",
-        4..=6 => "MEDIUM",
-        7..=8 => "HIGH",
-        _ => "CRITICAL",
+    let (risk_bar, risk_color): (&str, fn(&str) -> colored::ColoredString) = match receipt.risk_score {
+        0..=3 => ("LOW", |s: &str| s.green()),
+        4..=6 => ("MEDIUM", |s: &str| s.yellow()),
+        _ => ("HIGH/CRITICAL", |s: &str| s.red()),
     };
 
-    println!("┌─ Change Receipt ─────────────────────────────────────────┐");
+    println!("{}", "┌─ Change Receipt ─────────────────────────────────────────┐".bold());
     println!("│ Commit:    {:<47}│", short_oid);
     println!(
         "│ Timestamp: {:<47}│",
@@ -470,25 +484,23 @@ fn print_receipt(receipt: &ChangeReceipt) {
     );
     println!("│ Intent:    {:<47}│", truncate(&receipt.intent, 47));
     println!(
-        "│ Risk:      {:<3} ({}){}│",
-        risk_bar,
-        receipt.risk_score,
-        " ".repeat(40 - risk_bar.len() - format!("{}", receipt.risk_score).len())
+        "│ Risk:      {:<47}│",
+        risk_color(&format!("{} ({})", risk_bar, receipt.risk_score))
     );
-    println!("├─ Files Changed ──────────────────────────────────────────┤");
+    println!("{}", "├─ Files Changed ──────────────────────────────────────────┤".bold());
     for fc in &receipt.files_changed {
         let marker = match fc.status {
-            ChangeStatus::Added => "+",
-            ChangeStatus::Deleted => "-",
-            ChangeStatus::Renamed => "~",
-            ChangeStatus::Modified => "M",
+            ChangeStatus::Added => "+".green().to_string(),
+            ChangeStatus::Deleted => "-".red().to_string(),
+            ChangeStatus::Renamed => "~".blue().to_string(),
+            ChangeStatus::Modified => "M".yellow().to_string(),
         };
         println!("│  {} {:<54}│", marker, truncate(&fc.path, 54));
     }
     if receipt.files_changed.is_empty() {
         println!("│  (no files changed){:<39}│", "");
     }
-    println!("├─ Blast Radius ──────────────────────────────────────────┤");
+    println!("{}", "├─ Blast Radius ──────────────────────────────────────────┤".bold());
     println!(
         "│  Direct:   {:<47}│",
         receipt.blast_radius.direct_dependents.len()
@@ -498,13 +510,19 @@ fn print_receipt(receipt: &ChangeReceipt) {
         receipt.blast_radius.indirect_dependents.len()
     );
     if !receipt.risks.is_empty() {
-        println!("├─ Risks ─────────────────────────────────────────────────┤");
+        println!("{}", "├─ Risks ─────────────────────────────────────────────────┤".bold());
         for risk in &receipt.risks {
-            let sev = format!("[{:?}]", risk.severity);
+            let sev = match risk.severity {
+                RiskSeverity::Low => format!("[{:?}]", risk.severity).green().to_string(),
+                RiskSeverity::Medium => format!("[{:?}]", risk.severity).yellow().to_string(),
+                RiskSeverity::High | RiskSeverity::Critical => {
+                    format!("[{:?}]", risk.severity).red().to_string()
+                }
+            };
             println!("│  {} {:<52}│", sev, truncate(&risk.description, 52));
         }
     }
-    println!("└──────────────────────────────────────────────────────────┘");
+    println!("{}", "└──────────────────────────────────────────────────────────┘".bold());
 }
 
 fn truncate(s: &str, max: usize) -> String {

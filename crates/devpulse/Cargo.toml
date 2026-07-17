@@ -17,6 +17,10 @@ chrono.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+colored.workspace = true
+comfy-table.workspace = true
+indicatif.workspace = true
+inquire.workspace = true
 
 [dev-dependencies]
 tempfile = "3"

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, Duration, Timelike, Utc};
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use devcore_core::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -41,11 +42,11 @@ enum Commands {
     Event {
         /// Event type: coding, review, build, search, meeting, ai
         #[arg(short, long)]
-        kind: String,
+        kind: Option<String>,
 
         /// Duration in minutes
         #[arg(short, long)]
-        minutes: u32,
+        minutes: Option<u32>,
 
         /// Description
         #[arg(short, long, default_value = "")]
@@ -93,7 +94,7 @@ fn run(cli: Cli) -> Result<()> {
             minutes,
             description,
             path,
-        } => cmd_record_event(&path, &kind, minutes, &description),
+        } => cmd_record_event(&path, kind.as_deref(), minutes, &description),
         Commands::Suggest { path } => cmd_suggest(&path),
         Commands::Chart { period, path } => cmd_chart(&path, &period),
     }
@@ -190,7 +191,13 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     for (cat, mins) in &sorted {
         let pct = (mins / total_minutes) * 100.0;
         let bar_len = (pct / 100.0 * 40.0) as usize;
-        let bar = "█".repeat(bar_len);
+        let bar = if pct > 40.0 {
+            "█".repeat(bar_len).red().to_string()
+        } else if pct > 20.0 {
+            "█".repeat(bar_len).yellow().to_string()
+        } else {
+            "█".repeat(bar_len).green().to_string()
+        };
         let hours_mins = if *mins >= 60.0 {
             format!("{:.1}h", mins / 60.0)
         } else {
@@ -203,7 +210,12 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     if let Some((top_cat, top_mins)) = sorted.first() {
         let pct = (top_mins / total_minutes) * 100.0;
         if pct > 40.0 {
-            println!("\n⚠ Bottleneck: {} takes {:.0}% of your time", top_cat, pct);
+            println!(
+                "\n{} {} takes {:.0}% of your time",
+                "⚠ Bottleneck:".red().bold(),
+                top_cat.red(),
+                pct
+            );
             match top_cat.as_str() {
                 "Search" | "SEARCH" => {
                     println!(
@@ -226,13 +238,37 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
 
 fn cmd_record_event(
     project_root: &Path,
-    kind: &str,
-    minutes: u32,
+    kind: Option<&str>,
+    minutes: Option<u32>,
     description: &str,
 ) -> Result<()> {
+    let kind_str = match kind {
+        Some(k) => k.to_string(),
+        None => {
+            let options: Vec<String> = vec![
+                "coding".into(),
+                "review".into(),
+                "build".into(),
+                "search".into(),
+                "meeting".into(),
+                "ai".into(),
+            ];
+            let selection = inquire::Select::new("Event kind:", options).prompt()?;
+            selection
+        }
+    };
+
+    let mins = match minutes {
+        Some(m) => m,
+        None => {
+            let input = inquire::Text::new("Duration (minutes):").prompt()?;
+            input.parse::<u32>()?
+        }
+    };
+
     let store = Store::open(project_root)?;
 
-    let event_type = match kind.to_lowercase().as_str() {
+    let event_type = match kind_str.to_lowercase().as_str() {
         "coding" | "code" => EventType::GitCommit,
         "review" | "reviewing" => EventType::FileEdit,
         "build" | "deploy" => EventType::BuildRun,
@@ -244,9 +280,9 @@ fn cmd_record_event(
     };
 
     let details = serde_json::json!({
-        "minutes": minutes,
+        "minutes": mins,
         "description": description,
-        "category": kind,
+        "category": kind_str,
     });
 
     let event = WorkflowEvent {
@@ -260,7 +296,7 @@ fn cmd_record_event(
 
     println!(
         "Recorded: {} minutes of {} — {}",
-        minutes, kind, description
+        mins, kind_str, description
     );
 
     Ok(())
@@ -312,7 +348,7 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
     if !high_blast_files.is_empty() {
         println!("High-Risk Files Changed Recently:");
         for (file, deps) in &high_blast_files {
-            println!("  ⚠ {} ({} dependents)", file, deps);
+            println!("  {} {} ({} dependents)", "⚠".red(), file.red(), deps);
         }
         println!(
             "  → Consider using `codetrail blast {}` before next change",
@@ -327,10 +363,13 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
         println!("AI Usage: {:.0}% of commits are AI-generated", ai_ratio);
 
         if ai_ratio > 70.0 {
-            println!("  ⚠ High AI usage — ensure adequate review coverage");
+            println!(
+                "  {} High AI usage — ensure adequate review coverage",
+                "⚠".red()
+            );
             println!("  → Run `shipforge receipt` on each commit to track change quality");
         } else if ai_ratio > 30.0 {
-            println!("  ✓ Balanced AI usage");
+            println!("  {} Balanced AI usage", "✓".green());
         } else {
             println!("  Low AI usage — consider using AI for repetitive tasks");
         }
@@ -396,8 +435,18 @@ fn cmd_chart(project_root: &Path, period: &str) -> Result<()> {
         } else {
             0
         };
-        let bar = "█".repeat(bar_len);
-        let marker = if mins > 0 { "●" } else { " " };
+        let bar = if mins as f64 / max_val as f64 > 0.5 {
+            "█".repeat(bar_len).red().to_string()
+        } else if mins as f64 / max_val as f64 > 0.25 {
+            "█".repeat(bar_len).yellow().to_string()
+        } else {
+            "█".repeat(bar_len).green().to_string()
+        };
+        let marker = if mins > 0 {
+            "●".green().to_string()
+        } else {
+            " ".to_string()
+        };
         println!("{:>2}:00  {:>6}m  {} {}", hour, mins, bar, marker);
     }
 
