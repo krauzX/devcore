@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 /// Analyzes the downstream impact of file changes by building an import/dependency graph.
 pub struct BlastRadiusAnalyzer {
     root: PathBuf,
+    config: DevCoreConfig,
     import_graph: HashMap<String, HashSet<String>>,
     reverse_index: HashMap<String, HashSet<String>>,
 }
@@ -15,8 +16,10 @@ impl BlastRadiusAnalyzer {
     /// Creates a new analyzer rooted at the given project directory.
     /// Call `build_graph` before `analyze` to populate the dependency graph.
     pub fn new(root: &Path) -> Self {
+        let config = DevCoreConfig::load(root).unwrap_or_default();
         Self {
             root: root.to_path_buf(),
+            config,
             import_graph: HashMap::new(),
             reverse_index: HashMap::new(),
         }
@@ -123,7 +126,6 @@ impl BlastRadiusAnalyzer {
     }
 
     fn collect_source_files(&self) -> Result<Vec<PathBuf>, DevCoreError> {
-        let config = DevCoreConfig::load(&self.root)?;
         let mut files = Vec::new();
 
         for entry in walkdir::WalkDir::new(&self.root)
@@ -138,17 +140,17 @@ impl BlastRadiusAnalyzer {
 
                 if let Some(ext) = entry.path().extension() {
                     let ext_str = ext.to_string_lossy();
-                    if config.source_extensions.contains(&ext_str.to_string()) {
+                    if self.config.source_extensions.contains(&ext_str.to_string()) {
                         let path = entry.path().to_path_buf();
 
                         if let Ok(metadata) = std::fs::metadata(&path) {
-                            if metadata.len() > config.max_file_size_bytes {
+                            if metadata.len() > self.config.max_file_size_bytes {
                                 continue;
                             }
                         }
 
                         let rel = self.relative_path(&path);
-                        let excluded = config
+                        let excluded = self.config
                             .exclude_dirs
                             .iter()
                             .any(|d| rel.starts_with(d.as_str()));
