@@ -197,6 +197,7 @@ dependencies = [
  "devcore-core",
  "serde",
  "serde_json",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
 ]
@@ -261,6 +262,7 @@ dependencies = [
  "devcore-core",
  "serde",
  "serde_json",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -963,6 +965,7 @@ dependencies = [
  "git2",
  "serde",
  "serde_json",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
  "uuid",
