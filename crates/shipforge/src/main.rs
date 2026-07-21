@@ -147,7 +147,6 @@ fn cmd_receipt(project_root: &Path, commit_oid: Option<&str>) -> Result<()> {
     let is_ai = info.is_ai_generated;
     let ai_source = info.ai_source.clone();
 
-    // Build blast radius
     let sp = indicatif::ProgressBar::new_spinner();
     sp.set_message("Building blast radius graph...");
     let mut analyzer = BlastRadiusAnalyzer::new(project_root);
@@ -166,7 +165,6 @@ fn cmd_receipt(project_root: &Path, commit_oid: Option<&str>) -> Result<()> {
     all_blast.indirect_dependents.sort();
     all_blast.indirect_dependents.dedup();
 
-    // Risk scoring
     let risk_score = calculate_risk_score(&info, &all_blast);
     let risks = identify_risks(&info, &all_blast);
 
@@ -190,7 +188,6 @@ fn cmd_receipt(project_root: &Path, commit_oid: Option<&str>) -> Result<()> {
 
     store.save_receipt(&receipt)?;
 
-    // Print receipt
     print_receipt(&receipt);
 
     Ok(())
@@ -309,7 +306,6 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
         }
     }
 
-    // Blast radius
     let mut analyzer = BlastRadiusAnalyzer::new(project_root);
     analyzer.build_graph()?;
     let br = analyzer.analyze(file_path);
@@ -332,7 +328,6 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
         println!("\nNo dependents found — safe to modify.");
     }
 
-    // Show file content at HEAD
     if let Ok(Some(content)) = git.file_content(file_path) {
         println!("\n--- File Content (first 10 lines) ---");
         for (i, line) in content.lines().take(10).enumerate() {
@@ -371,7 +366,6 @@ fn cmd_blast(project_root: &Path, file_path: &str) -> Result<()> {
         }
     }
 
-    // Risk level
     let risk = match (br.direct_dependents.len(), br.indirect_dependents.len()) {
         (0, 0) => "LOW — isolated file, safe to change",
         (1..=3, 0) => "LOW — few direct dependents",
@@ -393,7 +387,6 @@ fn calculate_risk_score(info: &CommitInfo, blast: &BlastRadius) -> u8 {
         score += 2;
     }
 
-    // Large changes are riskier
     let total_changes = info.insertions + info.deletions;
     if total_changes > 500 {
         score += 3;
@@ -403,14 +396,12 @@ fn calculate_risk_score(info: &CommitInfo, blast: &BlastRadius) -> u8 {
         score += 1;
     }
 
-    // Many files changed
     if info.files_changed.len() > 10 {
         score += 2;
     } else if info.files_changed.len() > 5 {
         score += 1;
     }
 
-    // Blast radius
     score += (blast.direct_dependents.len() / 3).min(3) as u8;
     score += (blast.indirect_dependents.len() / 5).min(2) as u8;
 

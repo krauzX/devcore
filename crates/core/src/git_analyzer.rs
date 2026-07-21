@@ -10,8 +10,6 @@ pub struct GitAnalyzer {
 }
 
 impl GitAnalyzer {
-    /// Opens a git repository at the given path.
-    /// Returns an error if the path is not a valid git repository.
     pub fn open(path: &Path) -> Result<Self, DevCoreError> {
         let repo = Repository::open(path).map_err(|e| {
             DevCoreError::Config(format!(
@@ -23,7 +21,6 @@ impl GitAnalyzer {
         Ok(Self { repo })
     }
 
-    /// Returns the OID of the current HEAD commit as a hex string.
     pub fn head_oid(&self) -> Result<String, DevCoreError> {
         let head = self
             .repo
@@ -67,7 +64,6 @@ impl GitAnalyzer {
         Ok(commits)
     }
 
-    /// Extracts structured information from a single git commit.
     pub fn commit_info(&self, commit: &git2::Commit) -> Result<CommitInfo, DevCoreError> {
         let oid = commit.id().to_string();
         let message = commit.message().unwrap_or("").to_string();
@@ -85,6 +81,52 @@ impl GitAnalyzer {
         let diff =
             self.repo
                 .diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), Some(&mut diff_opts))?;
+
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        // Collect per-file insertions/deletions via line callbacks
+        let file_insertions: Rc<RefCell<std::collections::HashMap<String, u32>>> =
+            Rc::new(RefCell::new(std::collections::HashMap::new()));
+        let file_deletions: Rc<RefCell<std::collections::HashMap<String, u32>>> =
+            Rc::new(RefCell::new(std::collections::HashMap::new()));
+
+        let ins_clone = Rc::clone(&file_insertions);
+        let del_clone = Rc::clone(&file_deletions);
+
+        diff.foreach(
+            &mut |delta, _progress| {
+                let path = delta
+                    .new_file()
+                    .path()
+                    .or_else(|| delta.old_file().path())
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                ins_clone.borrow_mut().entry(path.clone()).or_insert(0);
+                del_clone.borrow_mut().entry(path).or_insert(0);
+                true
+            },
+            None,
+            None,
+            Some(&mut |delta, _hunk, line| {
+                let path = delta
+                    .new_file()
+                    .path()
+                    .or_else(|| delta.old_file().path())
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let origin = line.origin();
+                if origin == '+' {
+                    *ins_clone.borrow_mut().entry(path).or_insert(0) += 1;
+                } else if origin == '-' {
+                    *del_clone.borrow_mut().entry(path).or_insert(0) += 1;
+                }
+                true
+            }),
+        )?;
+
+        let file_insertions = file_insertions.borrow();
+        let file_deletions = file_deletions.borrow();
 
         let mut files_changed = Vec::new();
         for delta_idx in 0..diff.deltas().len() {
@@ -104,11 +146,14 @@ impl GitAnalyzer {
                 _ => ChangeStatus::Modified,
             };
 
+            let ins = file_insertions.get(&path).copied().unwrap_or(0);
+            let del = file_deletions.get(&path).copied().unwrap_or(0);
+
             files_changed.push(FileChange {
                 path,
                 status,
-                insertions: 0,
-                deletions: 0,
+                insertions: ins,
+                deletions: del,
             });
         }
 
@@ -147,7 +192,6 @@ impl GitAnalyzer {
         Ok(Some(String::from_utf8_lossy(blob.content()).to_string()))
     }
 
-    /// Lists all file paths tracked at HEAD.
     pub fn list_files(&self) -> Result<Vec<String>, DevCoreError> {
         let head = self.repo.head()?;
         let tree = head.peel_to_tree()?;
@@ -167,7 +211,6 @@ impl GitAnalyzer {
 
     /// Returns blame information for a file, listing each line's last-modifying commit and author.
     pub fn blame_file(&self, path: &str) -> Result<Vec<BlameLine>, DevCoreError> {
-        let _head = self.repo.head()?;
         let blame = self.repo.blame_file(
             std::path::Path::new(path),
             Some(&mut git2::BlameOptions::new()),
@@ -193,33 +236,21 @@ impl GitAnalyzer {
 /// Summary information about a single git commit.
 #[derive(Debug, Clone)]
 pub struct CommitInfo {
-    /// Git commit OID (hex string)
     pub oid: String,
-    /// Full commit message
     pub message: String,
-    /// Commit author name
     pub author: String,
-    /// Commit timestamp
     pub timestamp: DateTime<Utc>,
-    /// Whether the commit appears to be AI-generated
     pub is_ai_generated: bool,
-    /// Detected AI source, if any
     pub ai_source: Option<AiSource>,
-    /// Files modified in this commit
     pub files_changed: Vec<FileChange>,
-    /// Total lines inserted
     pub insertions: u32,
-    /// Total lines deleted
     pub deletions: u32,
 }
 
 /// A single line from `git blame`, recording which commit last touched it.
 #[derive(Debug, Clone)]
 pub struct BlameLine {
-    /// 1-based line number in the file
     pub line: u32,
-    /// OID of the commit that last modified this line
     pub commit_oid: String,
-    /// Author of the last-modifying commit
     pub author: String,
 }

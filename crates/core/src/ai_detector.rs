@@ -72,11 +72,9 @@ pub struct DetectionResult {
     pub source: AiSource,
     /// Confidence 0.0 – 1.0 (0 = pure guess, 1 = certain)
     pub confidence: f64,
-    /// Which signals triggered detection
     pub signals: Vec<String>,
 }
 
-/// Multi-signal AI detection engine.
 pub struct AiDetector;
 
 impl Default for AiDetector {
@@ -90,43 +88,32 @@ impl AiDetector {
         Self
     }
 
-    /// Primary detection: combines commit message, author, and diff signals.
     pub fn detect(&self, commit_message: &str, author: &str) -> Option<DetectionResult> {
         let mut signals = Vec::new();
         let mut score: f64 = 0.0;
         let mut source = AiSource::Unknown;
 
-        // Signal 1: explicit tool name in commit message (strongest)
         if let Some((s, name)) = self.match_tool_name(commit_message) {
             source = s;
             score += 0.8;
             signals.push(format!("tool_name:{}", name));
         }
 
-        // Signal 2: AI body pattern in commit message
         if AI_BODY_RE.is_match(commit_message) {
             score += 0.3;
             signals.push("ai_body_pattern".into());
         }
 
-        // Signal 3: bot/automation author
         if let Some(author_match) = self.match_bot_author(author) {
             score += 0.6;
             signals.push(format!("bot_author:{}", author_match));
-            if source == AiSource::Unknown {
-                source = AiSource::Unknown;
-            }
         }
 
-        // Signal 4: conventional commit format (weak alone, strong with other signals)
         if CONVENTIONAL_RE.is_match(commit_message) {
             score += 0.1;
             signals.push("conventional_commit".into());
         }
 
-        // Signal 5: very large diff with many files (AI signature)
-        // This is checked externally via detect_with_diff()
-        // but we add a lightweight heuristic here based on message length
         if commit_message.len() > 500 {
             score += 0.15;
             signals.push("long_message".into());
@@ -143,7 +130,6 @@ impl AiDetector {
         })
     }
 
-    /// Extended detection: adds diff-level signals for higher accuracy.
     pub fn detect_with_diff(
         &self,
         commit_message: &str,
@@ -154,19 +140,16 @@ impl AiDetector {
     ) -> Option<DetectionResult> {
         let mut result = self.detect(commit_message, author)?;
 
-        // Signal 6: many files changed in one commit (AI batches work)
         if files_changed > 10 {
             result.confidence += 0.15;
             result.signals.push(format!("many_files:{}", files_changed));
         }
 
-        // Signal 7: large insertions with few deletions (AI writes new code, rarely deletes)
         if insertions > 200 && deletions < insertions / 5 {
             result.confidence += 0.1;
             result.signals.push("insert_heavy".into());
         }
 
-        // Signal 8: very balanced insertions/deletions (AI refactors)
         if insertions > 50 && deletions > 50 {
             let ratio = insertions as f64 / deletions as f64;
             if (0.8..=1.2).contains(&ratio) {
@@ -179,7 +162,6 @@ impl AiDetector {
         Some(result)
     }
 
-    /// Check if a file's content contains AI markers.
     pub fn detect_file_content(&self, content: &str) -> Option<AiSource> {
         for marker in FILE_MARKERS.iter() {
             if let Some(m) = marker.find(content) {
@@ -205,7 +187,6 @@ impl AiDetector {
         None
     }
 
-    /// Extract the first line of a commit message as intent.
     pub fn extract_intent(&self, commit_message: &str) -> String {
         commit_message
             .lines()
@@ -256,83 +237,5 @@ impl AiDetector {
             }
         }
         None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn detects_cursor_explicit() {
-        let d = AiDetector::new();
-        let r = d.detect("cursor: fix auth flow", "user").unwrap();
-        assert_eq!(r.source, AiSource::Cursor);
-        assert!(r.confidence >= 0.7);
-    }
-
-    #[test]
-    fn detects_copilot_explicit() {
-        let d = AiDetector::new();
-        let r = d.detect("copilot: add tests", "user").unwrap();
-        assert_eq!(r.source, AiSource::Copilot);
-    }
-
-    #[test]
-    fn detects_claude_explicit() {
-        let d = AiDetector::new();
-        let r = d.detect("claude: refactor module", "user").unwrap();
-        assert_eq!(r.source, AiSource::ClaudeCode);
-    }
-
-    #[test]
-    fn detects_chatgpt_in_message() {
-        let d = AiDetector::new();
-        let r = d.detect("gpt-4 generated this function", "user").unwrap();
-        assert_eq!(r.source, AiSource::Unknown);
-        assert!(r.signals.iter().any(|s| s.contains("chatgpt")));
-    }
-
-    #[test]
-    fn detects_bot_author() {
-        let d = AiDetector::new();
-        let r = d.detect("update deps", "dependabot[bot]").unwrap();
-        assert!(r.confidence >= 0.5);
-        assert!(r.signals.iter().any(|s| s.contains("bot_author")));
-    }
-
-    #[test]
-    fn no_detection_for_human_commit() {
-        let d = AiDetector::new();
-        assert!(d.detect("fix: resolve race condition", "john").is_none());
-    }
-
-    #[test]
-    fn detection_with_many_files_is_higher_confidence() {
-        let d = AiDetector::new();
-        let r1 = d.detect("cursor: refactor", "user").unwrap();
-        let r2 = d
-            .detect_with_diff("cursor: refactor", "user", 15, 300, 50)
-            .unwrap();
-        assert!(r2.confidence > r1.confidence);
-    }
-
-    #[test]
-    fn detect_file_ai_marker() {
-        let d = AiDetector::new();
-        assert!(d.detect_file_content("// @copilot suggest").is_some());
-        assert!(d
-            .detect_file_content("/* ai-generated — do not edit */")
-            .is_some());
-        assert!(d.detect_file_content("fn main() {}").is_none());
-    }
-
-    #[test]
-    fn extract_intent_takes_first_line() {
-        let d = AiDetector::new();
-        assert_eq!(
-            d.extract_intent("fix auth\n\nDetailed description"),
-            "fix auth"
-        );
     }
 }

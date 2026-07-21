@@ -69,7 +69,6 @@ impl DevCoreConfig {
         Ok(config)
     }
 
-    /// Saves this configuration to `.devcore/config.toml`.
     pub fn save(&self, project_root: &Path) -> Result<(), DevCoreError> {
         let config_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&config_dir)?;
@@ -80,7 +79,6 @@ impl DevCoreConfig {
         Ok(())
     }
 
-    /// Validates the configuration and returns warnings for questionable values.
     pub fn validate(&self) -> Result<(), DevCoreError> {
         if self.source_extensions.is_empty() {
             return Err(DevCoreError::Config(

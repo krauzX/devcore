@@ -2,27 +2,46 @@ use anyhow::Result;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
+/// A research paper tracked in the reading list.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Paper {
+    /// Unique paper identifier
     pub id: String,
+    /// Paper title
     pub title: String,
+    /// Comma-separated list of authors
     pub authors: Option<String>,
+    /// Publication venue or conference
     pub venue: Option<String>,
+    /// Publication year
     pub year: Option<u32>,
+    /// Digital Object Identifier
     pub doi: Option<String>,
+    /// arXiv identifier
     pub arxiv_id: Option<String>,
+    /// Current reading status
     pub status: PaperStatus,
+    /// Tags for categorization
     pub tags: Option<String>,
+    /// Personal notes
     pub notes: Option<String>,
+    /// ISO 8601 timestamp when the paper was added
     pub added_at: String,
 }
 
+/// Reading status of a research paper.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum PaperStatus {
+    /// Not yet read
     ToRead,
+    /// Currently being read
     Reading,
+    /// Read and reviewed
     Read,
+    /// Cited in work
     Cited,
+    /// Archived for reference
     Archived,
 }
 
@@ -39,6 +58,7 @@ impl std::fmt::Display for PaperStatus {
 }
 
 impl Paper {
+    /// Lists papers, optionally filtered by status.
     pub fn list(conn: &Connection, status_filter: Option<&str>) -> Result<Vec<Paper>> {
         let sql = if status_filter.is_some() {
             "SELECT id, title, authors, venue, year, doi, arxiv_id, status, tags, notes, added_at
@@ -86,6 +106,7 @@ impl Paper {
         })
     }
 
+    /// Returns aggregate counts of papers by reading status.
     pub fn stats(conn: &Connection) -> Result<PaperStats> {
         let total: u32 = conn.query_row("SELECT COUNT(*) FROM papers", [], |r| r.get(0))?;
         let to_read: u32 = conn.query_row(
@@ -119,11 +140,17 @@ impl Paper {
     }
 }
 
+/// Aggregate counts of papers by reading status.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PaperStats {
+    /// Total number of tracked papers
     pub total: u32,
+    /// Papers not yet read
     pub to_read: u32,
+    /// Papers currently being read
     pub reading: u32,
+    /// Papers that have been read
     pub read: u32,
+    /// Papers that have been cited
     pub cited: u32,
 }

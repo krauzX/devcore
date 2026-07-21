@@ -328,6 +328,8 @@ fn cmd_ai_log(limit: usize, source_filter: Option<&str>) -> Result<()> {
     let store = Store::open(Path::new("."))?;
     let receipts = store.recent_receipts(limit * 3)?;
 
+    let total_commits = receipts.len();
+    let total_ai = receipts.iter().filter(|r| r.is_ai_generated).count();
     let filtered: Vec<&ChangeReceipt> = receipts
         .iter()
         .filter(|r| r.is_ai_generated)
@@ -348,13 +350,10 @@ fn cmd_ai_log(limit: usize, source_filter: Option<&str>) -> Result<()> {
         .take(limit)
         .collect();
 
-    let total_commits = store.recent_receipts(limit * 3)?.len();
     let ai_count = filtered.len();
     println!(
         "Showing {} of {} total AI receipts ({} total commits)",
-        ai_count,
-        store.recent_receipts(1000)?.len(),
-        total_commits
+        ai_count, total_ai, total_commits
     );
 
     println!("AI-Generated Change Receipts");

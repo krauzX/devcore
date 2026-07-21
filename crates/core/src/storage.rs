@@ -1,7 +1,7 @@
 use crate::error::DevCoreError;
 use crate::models::*;
 use rusqlite::{params, Connection};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Mutex;
 
 const SCHEMA: &str = r#"
@@ -32,11 +32,9 @@ type Result<T> = std::result::Result<T, DevCoreError>;
 /// Persistent storage backed by SQLite for change receipts and workflow events.
 pub struct Store {
     conn: Mutex<Connection>,
-    _path: PathBuf,
 }
 
 impl Store {
-    /// Opens or creates the database at `.devcore/devcore.db` inside the project root.
     pub fn open(project_root: &Path) -> Result<Self> {
         let db_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&db_dir)?;
@@ -47,7 +45,6 @@ impl Store {
         conn.execute_batch(SCHEMA)?;
         Ok(Self {
             conn: Mutex::new(conn),
-            _path: db_path,
         })
     }
 
@@ -101,7 +98,6 @@ impl Store {
         .map(|mut v| v.pop())
     }
 
-    /// Returns the most recent change receipts, ordered by timestamp descending.
     pub fn recent_receipts(&self, limit: usize) -> Result<Vec<ChangeReceipt>> {
         self.query_receipts(
             "SELECT receipt_json FROM change_receipts ORDER BY timestamp DESC LIMIT ?1",
@@ -109,7 +105,6 @@ impl Store {
         )
     }
 
-    /// Returns all change receipts that touch the given file path.
     pub fn receipts_for_file(&self, file_path: &str) -> Result<Vec<ChangeReceipt>> {
         let pattern = format!("%\"path\":\"{}\"%", escape_like(file_path));
         self.query_receipts("SELECT receipt_json FROM change_receipts WHERE receipt_json LIKE ?1 ESCAPE '\\' ORDER BY timestamp DESC", params![pattern])
@@ -126,7 +121,6 @@ impl Store {
         Ok(())
     }
 
-    /// Returns all workflow events since the given timestamp.
     pub fn events_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<WorkflowEvent>> {
         self.query_events(
             "SELECT details_json FROM workflow_events WHERE timestamp >= ?1 ORDER BY timestamp ASC",

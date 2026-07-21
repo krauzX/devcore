@@ -5,43 +5,65 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Mutex;
 
+/// An academic semester with its date range and active status.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Semester {
+    /// Unique semester identifier (e.g. "sem-5")
     pub id: String,
+    /// Semester number (1–8)
     pub number: u8,
+    /// Human-readable name (e.g. "Semester 5")
     pub name: String,
+    /// First day of the semester
     pub start_date: NaiveDate,
+    /// Last day of the semester
     pub end_date: NaiveDate,
+    /// Whether this is the currently active semester
     pub is_current: bool,
 }
 
+/// Institution-level academic configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AcademicConfig {
+    /// Name of the institution
     pub institution: String,
+    /// Degree program (e.g. "B.Tech CSE")
     pub program: String,
+    /// Batch year (e.g. "2023")
     pub batch: String,
+    /// Grading scale used by the institution
     pub grading_scale: GradingScale,
+    /// Total number of semesters in the program
     pub total_semesters: u8,
 }
 
+/// Grading scale variants used by different institutions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GradingScale {
-    Indian10, // 10-point CGPA (IIIT Kottayam standard)
-    Indian4,  // 4-point GPA
+    /// 10-point CGPA (IIIT Kottayam standard)
+    Indian10,
+    /// 4-point GPA
+    Indian4,
+    /// Percentage-based grading
     Percentage,
+    /// Letter-grade system (A, B, C, etc.)
     LetterGrade,
 }
 
+/// Thread-safe persistent store for semesters and academic config.
 pub struct SemesterStore {
     conn: Mutex<Connection>,
 }
 
 impl SemesterStore {
     /// Get a locked reference to the database connection.
-    pub fn conn(&self) -> std::sync::MutexGuard<'_, Connection> {
-        self.conn.lock().unwrap()
+    pub fn conn(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
+        self.conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Database lock: {}", e))
     }
 
+    /// Opens or creates the academic database at `<project_root>/.devcore/academic.db`.
     pub fn open(project_root: &Path) -> Result<Self> {
         let db_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&db_dir)?;
@@ -117,6 +139,11 @@ impl SemesterStore {
                 notes TEXT,
                 FOREIGN KEY (course_id) REFERENCES courses(id)
             );
+            CREATE INDEX IF NOT EXISTS idx_courses_semester_id ON courses(semester_id);
+            CREATE INDEX IF NOT EXISTS idx_assignments_course_id ON assignments(course_id);
+            CREATE INDEX IF NOT EXISTS idx_grades_course_id ON grades(course_id);
+            CREATE INDEX IF NOT EXISTS idx_events_course_id ON events(course_id);
+            CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
             ",
         )?;
 
@@ -125,6 +152,7 @@ impl SemesterStore {
         })
     }
 
+    /// Seeds the database with default IIIT Kottayam semesters and CSE courses.
     pub fn init_iiit_kottayam(&self) -> Result<()> {
         let config = AcademicConfig {
             institution: "IIIT Kottayam".to_string(),
@@ -154,7 +182,7 @@ impl SemesterStore {
 
             let is_current = sem == 5; // Assume 5th semester is current for 2023 batch
 
-            self.conn.lock().unwrap().execute(
+            self.conn()?.execute(
                 "INSERT OR REPLACE INTO semesters (id, number, name, start_date, end_date, is_current)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 params![
@@ -180,7 +208,7 @@ impl SemesterStore {
             ("CS308", "DBMS Lab", 1, "lab"),
         ];
 
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn()?;
         for (code, name, credits, course_type) in &default_courses {
             let course_id = format!("sem-5-{}", code);
             conn.execute(
@@ -193,8 +221,9 @@ impl SemesterStore {
         Ok(())
     }
 
+    /// Returns the currently active semester, if one exists.
     pub fn current_semester(&self) -> Result<Option<Semester>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn()?;
         let mut stmt = conn.prepare(
             "SELECT id, number, name, start_date, end_date, is_current
              FROM semesters WHERE is_current = 1",
@@ -219,8 +248,9 @@ impl SemesterStore {
         }
     }
 
+    /// Lists all semesters ordered by number.
     pub fn list_semesters(&self) -> Result<Vec<Semester>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn()?;
         let mut stmt = conn.prepare(
             "SELECT id, number, name, start_date, end_date, is_current FROM semesters ORDER BY number",
         )?;
@@ -241,8 +271,9 @@ impl SemesterStore {
         Ok(rows.filter_map(|r| r.ok()).collect())
     }
 
+    /// Saves a config key-value pair, replacing any existing value for that key.
     pub fn save_config(&self, key: &str, value: &str) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn()?;
         conn.execute(
             "INSERT OR REPLACE INTO config (key, value) VALUES (?1, ?2)",
             params![key, value],
@@ -250,8 +281,9 @@ impl SemesterStore {
         Ok(())
     }
 
+    /// Retrieves a config value by key, or `None` if not found.
     pub fn get_config(&self, key: &str) -> Result<Option<String>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn()?;
         let mut stmt = conn.prepare("SELECT value FROM config WHERE key = ?1")?;
         let mut rows = stmt.query_map(params![key], |row| row.get::<_, String>(0))?;
         match rows.next() {

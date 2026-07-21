@@ -3,26 +3,44 @@ use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
+/// An academic event such as an exam, assignment deadline, or holiday.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AcademicEvent {
+    /// Unique event identifier
     pub id: String,
+    /// Event title
     pub title: String,
+    /// Type of event
     pub event_type: EventType,
+    /// Date of the event
     pub date: NaiveDate,
+    /// Optional time of day (e.g. "10:00")
     pub time: Option<String>,
+    /// Associated course ID, if applicable
     pub course_id: Option<String>,
+    /// Optional notes
     pub notes: Option<String>,
 }
 
+/// Categories of academic events.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum EventType {
+    /// Examination
     Exam,
+    /// Assignment deadline
     Assignment,
+    /// Laboratory session
     Lab,
+    /// Lecture
     Lecture,
+    /// Holiday
     Holiday,
+    /// Submission deadline
     Submission,
+    /// Presentation
     Presentation,
+    /// Uncategorized event
     Other,
 }
 
@@ -42,6 +60,7 @@ impl std::fmt::Display for EventType {
 }
 
 impl AcademicEvent {
+    /// Returns upcoming events within the given number of days from today.
     pub fn upcoming(conn: &Connection, days: u32) -> Result<Vec<AcademicEvent>> {
         let today = chrono::Utc::now().date_naive();
         let deadline = today + chrono::Duration::days(days as i64);
@@ -79,6 +98,7 @@ impl AcademicEvent {
         Ok(rows.filter_map(|r| r.ok()).collect())
     }
 
+    /// Returns events occurring within the next 7 days.
     pub fn this_week(conn: &Connection) -> Result<Vec<AcademicEvent>> {
         Self::upcoming(conn, 7)
     }
