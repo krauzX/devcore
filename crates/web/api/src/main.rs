@@ -61,49 +61,6 @@ async fn health() -> Json<Value> {
     Json(json!({ "status": "ok", "version": "0.1.0" }))
 }
 
-async fn activity(State(state): State<AppState>) -> Result<Json<Value>, StatusCode> {
-    let conn = state
-        .store
-        .conn()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let events = devcore_academic::AcademicEvent::this_week(&conn)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let total_events = events.len();
-    let mut categories: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
-    let mut recent_events = Vec::new();
-
-    for event in &events {
-        let cat = format!("{}", event.event_type);
-        *categories.entry(cat).or_insert(0) += 1;
-        recent_events.push(json!({
-            "id": event.id,
-            "title": event.title,
-            "type": format!("{}", event.event_type),
-            "date": event.date.to_string(),
-            "time": event.time,
-        }));
-    }
-
-    let total_minutes: u32 = categories.values().sum::<u32>() * 30;
-
-    Ok(Json(json!({
-        "total_events": total_events,
-        "total_minutes": total_minutes,
-        "categories": categories,
-        "recent_events": recent_events,
-    })))
-}
-
-async fn system_info() -> Json<Value> {
-    Json(json!({
-        "version": env!("CARGO_PKG_VERSION"),
-        "crate_count": 7,
-        "test_count": 31,
-        "languages": ["rust", "typescript"],
-    }))
-}
-
 async fn list_semesters(State(state): State<AppState>) -> Result<Json<Value>, StatusCode> {
     let semesters = state
         .store
@@ -207,4 +164,47 @@ async fn dashboard(State(state): State<AppState>) -> Result<Json<Value>, StatusC
         "upcoming_events": upcoming,
         "sgpa": sgpa,
     })))
+}
+
+async fn activity(State(state): State<AppState>) -> Result<Json<Value>, StatusCode> {
+    let conn = state
+        .store
+        .conn()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let events = devcore_academic::AcademicEvent::this_week(&conn)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let total_events = events.len();
+    let mut categories: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    let mut recent_events = Vec::new();
+
+    for event in &events {
+        let cat = format!("{}", event.event_type);
+        *categories.entry(cat).or_insert(0) += 1;
+        recent_events.push(json!({
+            "id": event.id,
+            "title": event.title,
+            "type": format!("{}", event.event_type),
+            "date": event.date.to_string(),
+            "time": event.time,
+        }));
+    }
+
+    let total_minutes: u32 = categories.values().sum::<u32>() * 30;
+
+    Ok(Json(json!({
+        "total_events": total_events,
+        "total_minutes": total_minutes,
+        "categories": categories,
+        "recent_events": recent_events,
+    })))
+}
+
+async fn system_info() -> Json<Value> {
+    Json(json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "crate_count": 7,
+        "test_count": 31,
+        "languages": ["rust", "typescript"],
+    }))
 }

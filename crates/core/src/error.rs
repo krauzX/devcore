@@ -1,4 +1,3 @@
-/// Unified error type for the DevCore core library.
 #[derive(Debug, thiserror::Error)]
 pub enum DevCoreError {
     #[error("git error: {0}")]

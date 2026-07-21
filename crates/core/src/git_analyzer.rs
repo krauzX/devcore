@@ -233,7 +233,6 @@ impl GitAnalyzer {
     }
 }
 
-/// Summary information about a single git commit.
 #[derive(Debug, Clone)]
 pub struct CommitInfo {
     pub oid: String,

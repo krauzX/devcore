@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use walkdir::WalkDir;
 
 /// Scans the system for git repositories and collects activity data.
-/// Battery-efficient: only walks directories once, caches results.
 pub struct SystemScanner {
     repos: Vec<PathBuf>,
     scan_dirs: Vec<PathBuf>,
@@ -34,7 +33,6 @@ impl SystemScanner {
         }
     }
 
-    /// Create scanner with custom search directories.
     pub fn with_dirs(dirs: Vec<PathBuf>) -> Self {
         Self {
             repos: Vec::new(),
@@ -42,8 +40,6 @@ impl SystemScanner {
         }
     }
 
-    /// Scan system for git repositories. Returns list of repo paths.
-    /// Walks directories once, skips .git internals, node_modules, target.
     pub fn scan(&mut self) -> &[PathBuf] {
         self.repos.clear();
 
@@ -71,7 +67,6 @@ impl SystemScanner {
         &self.repos
     }
 
-    /// Get activity data for all scanned repos within a time window.
     pub fn collect_activity(&self, since: DateTime<Utc>) -> Result<Vec<RepoActivity>> {
         let mut activities = Vec::new();
 
@@ -118,7 +113,6 @@ impl SystemScanner {
     }
 }
 
-/// Activity summary for a single repository.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct RepoActivity {

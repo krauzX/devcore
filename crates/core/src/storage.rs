@@ -78,7 +78,6 @@ impl Store {
             .map_err(Into::into)
     }
 
-    /// Persists a change receipt, replacing any existing receipt with the same ID.
     pub fn save_receipt(&self, receipt: &ChangeReceipt) -> Result<()> {
         let conn = self.lock()?;
         let json = serde_json::to_string(receipt)?;
@@ -89,7 +88,6 @@ impl Store {
         Ok(())
     }
 
-    /// Retrieves a change receipt by commit OID. Returns `None` if not found.
     pub fn get_receipt(&self, commit_oid: &str) -> Result<Option<ChangeReceipt>> {
         self.query_receipts(
             "SELECT receipt_json FROM change_receipts WHERE commit_oid = ?1",
@@ -110,7 +108,6 @@ impl Store {
         self.query_receipts("SELECT receipt_json FROM change_receipts WHERE receipt_json LIKE ?1 ESCAPE '\\' ORDER BY timestamp DESC", params![pattern])
     }
 
-    /// Persists a workflow event, replacing any existing event with the same ID.
     pub fn save_event(&self, event: &WorkflowEvent) -> Result<()> {
         let conn = self.lock()?;
         let json = serde_json::to_string(event)?;

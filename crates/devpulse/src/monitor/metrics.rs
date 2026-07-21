@@ -68,7 +68,6 @@ pub enum InsightSeverity {
     Critical,
 }
 
-/// Compute research-backed metrics from repo activity data.
 pub fn compute_metrics(activities: &[RepoActivity]) -> DevMetrics {
     let total_commits: u64 = activities.iter().map(|a| a.total_commits as u64).sum();
     let total_insertions: u64 = activities.iter().map(|a| a.total_insertions as u64).sum();
@@ -102,7 +101,6 @@ pub fn compute_metrics(activities: &[RepoActivity]) -> DevMetrics {
         1.0
     };
 
-    // Context switching: repos touched per day (over 7 days)
     let days_active = activities
         .iter()
         .filter(|a| a.last_commit.is_some())
@@ -129,10 +127,8 @@ pub fn compute_metrics(activities: &[RepoActivity]) -> DevMetrics {
     // Trend: compare first half vs second half of period
     let trend = compute_trend(activities);
 
-    // Bottleneck detection
     let bottleneck = detect_bottleneck(activities);
 
-    // Generate insights
     let insights = generate_insights(
         ai_ratio,
         context_switch_index,
@@ -260,7 +256,6 @@ fn generate_insights(
 ) -> Vec<Insight> {
     let mut insights = Vec::new();
 
-    // AI usage insight
     if ai_ratio > 0.7 {
         insights.push(Insight {
             category: InsightCategory::AiUsage,
@@ -282,7 +277,6 @@ fn generate_insights(
         });
     }
 
-    // Context switching insight
     if context_switch_index > 3.0 {
         insights.push(Insight {
             category: InsightCategory::ContextSwitching,
@@ -296,7 +290,6 @@ fn generate_insights(
         });
     }
 
-    // Focus score insight
     if focus_score < 0.3 {
         insights.push(Insight {
             category: InsightCategory::Focus,
@@ -307,7 +300,6 @@ fn generate_insights(
         });
     }
 
-    // Sustainability insight
     if sustainability < 0.4 {
         insights.push(Insight {
             category: InsightCategory::Sustainability,
@@ -320,7 +312,6 @@ fn generate_insights(
         });
     }
 
-    // Churn insight
     if churn_ratio > 100.0 {
         insights.push(Insight {
             category: InsightCategory::Churn,
@@ -333,7 +324,6 @@ fn generate_insights(
         });
     }
 
-    // Volume insight
     if total_commits > 50 {
         insights.push(Insight {
             category: InsightCategory::Focus,

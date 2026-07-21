@@ -142,11 +142,9 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     let events = store.events_since(since)?;
     let git = GitAnalyzer::open(project_root).ok();
 
-    // Analyze git activity as workflow signal
     let mut time_by_category: HashMap<String, f64> = HashMap::new();
     let mut total_minutes = 0.0;
 
-    // Process recorded events
     for event in &events {
         let cat = format!("{:?}", event.event_type);
         let mins = event
@@ -158,12 +156,10 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
         total_minutes += mins;
     }
 
-    // If no events, analyze git history as proxy
     if events.is_empty() {
         if let Some(git_analyzer) = &git {
             let since_dt = Utc::now() - Duration::hours(parse_period_hours(period));
             if let Ok(commits) = git_analyzer.commits_since(since_dt, 100) {
-                // Estimate time from commit patterns
                 let ai_commits: Vec<_> = commits.iter().filter(|c| c.is_ai_generated).collect();
                 let human_commits: Vec<_> = commits.iter().filter(|c| !c.is_ai_generated).collect();
 
@@ -199,7 +195,6 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
     );
     println!();
 
-    // Sort by time
     let mut sorted: Vec<_> = time_by_category.into_iter().collect();
     sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -224,7 +219,6 @@ fn cmd_report(project_root: &Path, period: &str) -> Result<()> {
         println!("{:<20} {:>8}  {:>5.1}%  {}", cat, hours_mins, pct, bar);
     }
 
-    // Bottleneck detection
     if let Some((top_cat, top_mins)) = sorted.first() {
         let pct = (top_mins / total_minutes) * 100.0;
         if pct > 40.0 {
@@ -327,7 +321,6 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
     println!("DevPulse Suggestions");
     println!("{}", "=".repeat(60));
 
-    // Analyze recent commits for patterns
     let since = Utc::now() - Duration::days(7);
     let commits = git.commits_since(since, 100)?;
 
@@ -347,7 +340,6 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
     );
     println!();
 
-    // Analyze blast radius of recent changes
     let mut analyzer = BlastRadiusAnalyzer::new(project_root);
     analyzer.build_graph()?;
 
@@ -375,7 +367,6 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
         println!();
     }
 
-    // AI usage analysis
     if ai_count > 0 {
         let ai_ratio = ai_count as f64 / commits.len() as f64 * 100.0;
         println!("AI Usage: {:.0}% of commits are AI-generated", ai_ratio);
@@ -394,7 +385,6 @@ fn cmd_suggest(project_root: &Path) -> Result<()> {
         println!();
     }
 
-    // General suggestions
     println!("General Suggestions:");
     if commits.len() > 20 {
         println!("  • Consider batching related changes into fewer commits");
@@ -429,7 +419,6 @@ fn cmd_chart(project_root: &Path, period: &str) -> Result<()> {
         return Ok(());
     }
 
-    // Build hourly histogram
     let mut hourly: HashMap<u32, u32> = HashMap::new();
     for event in &events {
         let hour = event.timestamp.hour();

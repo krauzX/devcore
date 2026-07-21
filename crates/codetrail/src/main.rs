@@ -163,7 +163,6 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
             println!("  Source: {:?}", r.ai_source);
         }
 
-        // Show this file's specific change
         if let Some(fc) = r.files_changed.iter().find(|f| f.path == file_path) {
             let marker = match fc.status {
                 ChangeStatus::Added => "+".green().to_string(),
@@ -196,7 +195,6 @@ fn cmd_history(project_root: &Path, file_path: &str, limit: usize) -> Result<()>
         }
     }
 
-    // Show blame info
     if let Ok(blame) = git.blame_file(file_path) {
         let mut author_counts: std::collections::HashMap<String, usize> =
             std::collections::HashMap::new();
@@ -223,7 +221,6 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
     println!("File: {}", file_path);
     println!("{}", "=".repeat(70));
 
-    // Change history
     let relevant: Vec<&ChangeReceipt> = receipts
         .iter()
         .filter(|r| r.files_changed.iter().any(|f| f.path == file_path))
@@ -236,7 +233,6 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
         println!("  {}{} — {}", short, ai, r.intent);
     }
 
-    // Blast radius
     let mut analyzer = BlastRadiusAnalyzer::new(project_root);
     analyzer.build_graph()?;
     let br = analyzer.analyze(file_path);
@@ -262,7 +258,6 @@ fn cmd_explain(project_root: &Path, file_path: &str) -> Result<()> {
         }
     }
 
-    // Risks from receipts
     let all_risks: Vec<&Risk> = relevant
         .iter()
         .flat_map(|r| r.risks.iter())
@@ -428,7 +423,6 @@ fn cmd_risk(project_root: &Path) -> Result<()> {
     println!("High-risk (≥7):     {}", high_risk.to_string().red());
     println!("Average risk score: {:.1}/10", avg_risk);
 
-    // Files with most changes
     let mut file_changes: std::collections::HashMap<String, usize> =
         std::collections::HashMap::new();
     for r in &receipts {

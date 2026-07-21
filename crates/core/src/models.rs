@@ -2,7 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Identifies the AI tool or assistant that authored or assisted with a commit.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AiSource {
     Cursor,
@@ -11,25 +10,6 @@ pub enum AiSource {
     Windsurf,
     Aider,
     Unknown,
-}
-
-impl AiSource {
-    pub fn from_commit_message(msg: &str) -> Option<Self> {
-        let lower = msg.to_lowercase();
-        if lower.contains("cursor") || lower.contains("ai-generated") {
-            Some(Self::Cursor)
-        } else if lower.contains("copilot") {
-            Some(Self::Copilot)
-        } else if lower.contains("claude") || lower.contains("anthropic") {
-            Some(Self::ClaudeCode)
-        } else if lower.contains("windsurf") || lower.contains("codeium") {
-            Some(Self::Windsurf)
-        } else if lower.contains("aider") {
-            Some(Self::Aider)
-        } else {
-            None
-        }
-    }
 }
 
 impl fmt::Display for AiSource {
@@ -62,7 +42,6 @@ pub struct ChangeReceipt {
     pub risk_score: u8,
 }
 
-/// Represents a single file-level change within a commit.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileChange {
     pub path: String,
@@ -71,7 +50,6 @@ pub struct FileChange {
     pub deletions: u32,
 }
 
-/// Describes the kind of change applied to a file.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ChangeStatus {
     Added,
@@ -91,7 +69,6 @@ impl fmt::Display for ChangeStatus {
     }
 }
 
-/// A notable decision recorded during development.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Decision {
     pub timestamp: DateTime<Utc>,
@@ -99,7 +76,6 @@ pub struct Decision {
     pub rationale: Option<String>,
 }
 
-/// A risk identified in a commit that may require review or mitigation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Risk {
     pub severity: RiskSeverity,
@@ -109,7 +85,6 @@ pub struct Risk {
     pub downstream_files: Vec<String>,
 }
 
-/// Severity level for a identified risk.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RiskSeverity {
     Low,
@@ -137,7 +112,6 @@ pub struct BlastRadius {
     pub depth: u32,
 }
 
-/// A single event captured from the developer's workflow.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowEvent {
     pub id: String,
@@ -146,7 +120,6 @@ pub struct WorkflowEvent {
     pub details: serde_json::Value,
 }
 
-/// Categories of workflow events that can be tracked.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EventType {
     GitCommit,

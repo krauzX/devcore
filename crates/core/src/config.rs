@@ -2,10 +2,6 @@ use crate::error::DevCoreError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-/// Project-level configuration for DevCore tools.
-///
-/// Loaded from `.devcore/config.toml` in the project root. Falls back to
-/// sensible defaults when the file is missing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DevCoreConfig {
     #[serde(default = "default_extensions")]

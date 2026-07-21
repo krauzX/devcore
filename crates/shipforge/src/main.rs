@@ -113,7 +113,6 @@ fn cmd_init(path: &Path) -> Result<()> {
         files.len()
     );
 
-    // Build initial blast radius graph
     let mut analyzer = BlastRadiusAnalyzer::new(path);
     analyzer.build_graph()?;
 

@@ -59,6 +59,26 @@ export interface DashboardData {
   sgpa: number | null;
 }
 
+export interface ActivityData {
+  total_events: number;
+  total_minutes: number;
+  categories: Record<string, number>;
+  recent_events: {
+    id: string;
+    title: string;
+    type: string;
+    date: string;
+    time: string | null;
+  }[];
+}
+
+export interface SystemInfo {
+  version: string;
+  crate_count: number;
+  test_count: number;
+  languages: string[];
+}
+
 async function fetchApi<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, { signal });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -78,4 +98,6 @@ export const api = {
   paperStats: () => fetchApi<PaperStats>("/api/papers/stats"),
   upcoming: () => fetchApi<AcademicEvent[]>("/api/upcoming"),
   dashboard: () => fetchApi<DashboardData>("/api/dashboard"),
+  activity: () => fetchApi<ActivityData>("/api/activity"),
+  systemInfo: () => fetchApi<SystemInfo>("/api/system"),
 };

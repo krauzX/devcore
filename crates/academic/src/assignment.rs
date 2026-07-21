@@ -3,39 +3,24 @@ use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
-/// An academic assignment tied to a course.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Assignment {
-    /// Unique identifier
     pub id: String,
-    /// ID of the course this assignment belongs to
     pub course_id: String,
-    /// Assignment title
     pub title: String,
-    /// Optional description or instructions
     pub description: Option<String>,
-    /// Due date for submission
     pub due_date: NaiveDate,
-    /// Current status of the assignment
     pub status: AssignmentStatus,
-    /// Marks obtained after grading, if graded
     pub marks_obtained: Option<u32>,
-    /// Total marks possible
     pub marks_total: Option<u32>,
 }
 
-/// Status of an assignment through its lifecycle.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AssignmentStatus {
-    /// Not yet started
     Pending,
-    /// Currently being worked on
     InProgress,
-    /// Submitted for grading
     Submitted,
-    /// Graded by instructor
     Graded,
-    /// Submitted after the deadline
     Late,
 }
 
@@ -84,7 +69,6 @@ impl Assignment {
         Ok(rows.filter_map(|r| r.ok()).collect())
     }
 
-    /// List upcoming assignments due within the given number of days.
     pub fn upcoming(conn: &Connection, days: u32) -> Result<Vec<Assignment>> {
         let today = chrono::Utc::now().date_naive();
         let deadline = today + chrono::Duration::days(days as i64);

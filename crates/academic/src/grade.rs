@@ -2,52 +2,32 @@ use anyhow::Result;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
-/// A single grade entry recorded for a course.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GradeEntry {
-    /// Unique grade entry identifier
     pub id: String,
-    /// ID of the course this grade belongs to
     pub course_id: String,
-    /// Type of examination (e.g. "midterm", "final", "quiz")
     pub exam_type: String,
-    /// Marks obtained by the student
     pub marks_obtained: f64,
-    /// Maximum marks possible
     pub marks_total: f64,
-    /// Letter grade, if assigned
     pub grade: Option<String>,
-    /// ISO 8601 timestamp when the grade was recorded
     pub recorded_at: String,
 }
 
-/// Cumulative grade report for a student across semesters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CgpaReport {
-    /// Semester number
     pub semester: u8,
-    /// Semester GPA
     pub sgpa: f64,
-    /// Cumulative GPA up to this semester
     pub cgpa: f64,
-    /// Total credits earned in this semester
     pub total_credits: u8,
-    /// Per-course grade breakdown
     pub courses: Vec<CourseGrade>,
 }
 
-/// Grade information for a single course.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CourseGrade {
-    /// Course code (e.g. "CS301")
     pub code: String,
-    /// Course name
     pub name: String,
-    /// Credit hours
     pub credits: u8,
-    /// Numeric grade points on the 10-point scale
     pub grade_points: f64,
-    /// Letter grade
     pub grade: String,
 }
 
@@ -84,7 +64,6 @@ impl GradeEntry {
         Ok(Some(total_points / total_credits as f64))
     }
 
-    /// Lists all grade entries for courses in a given semester.
     pub fn list_for_semester(conn: &Connection, semester_id: &str) -> Result<Vec<GradeEntry>> {
         let mut stmt = conn.prepare(
             "SELECT g.id, g.course_id, g.exam_type, g.marks_obtained, g.marks_total,

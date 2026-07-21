@@ -30,8 +30,6 @@ import {
 } from "recharts";
 import { api, type DashboardData } from "@/lib/api";
 
-const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"];
-
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);

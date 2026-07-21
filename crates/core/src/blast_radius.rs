@@ -90,7 +90,6 @@ impl BlastRadiusAnalyzer {
         }
     }
 
-    /// Returns a sorted list of all source files in the dependency graph.
     pub fn list_all_files(&self) -> Vec<String> {
         let mut files: Vec<String> = self.import_graph.keys().cloned().collect();
         files.sort();

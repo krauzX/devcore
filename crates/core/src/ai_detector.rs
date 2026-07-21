@@ -66,7 +66,6 @@ static FILE_MARKERS: Lazy<Vec<Regex>> = Lazy::new(|| {
     ]
 });
 
-/// Detection result with confidence scoring.
 #[derive(Debug, Clone)]
 pub struct DetectionResult {
     pub source: AiSource,

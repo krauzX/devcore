@@ -9,7 +9,6 @@ import {
   FlaskConical,
   GraduationCap,
   GitBranch,
-  Activity,
   BarChart3,
 } from "lucide-react";
 
@@ -21,7 +20,6 @@ const navItems = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/dev", label: "Dev Tools", icon: GitBranch },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/activity", label: "Activity", icon: Activity },
 ];
 
 export function Sidebar() {

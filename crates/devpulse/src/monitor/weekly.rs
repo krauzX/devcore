@@ -5,8 +5,6 @@ use chrono::{Duration, Utc};
 use colored::{Color, Colorize};
 use std::path::Path;
 
-/// Weekly productivity report generator.
-/// Scans all repos, computes metrics, generates actionable report.
 #[allow(dead_code)]
 pub struct WeeklyReport {
     scanner: SystemScanner,
@@ -15,7 +13,6 @@ pub struct WeeklyReport {
 }
 
 impl WeeklyReport {
-    /// Generate weekly report by scanning all repos.
     pub fn generate(project_root: Option<&Path>) -> Result<Self> {
         let mut scanner = if let Some(root) = project_root {
             SystemScanner::with_dirs(vec![root.to_path_buf()])
@@ -35,7 +32,6 @@ impl WeeklyReport {
         })
     }
 
-    /// Print the weekly report to stdout with colored formatting.
     pub fn print(&self) {
         self.print_header();
         self.print_summary();
@@ -111,7 +107,6 @@ impl WeeklyReport {
         );
         println!();
 
-        // Key metrics with color coding
         println!("  {}", "KEY METRICS".white().bold());
         println!("  {}", "-".repeat(50));
 
@@ -278,13 +273,11 @@ impl WeeklyReport {
         println!();
     }
 
-    /// Get metrics for programmatic access.
     #[allow(dead_code)]
     pub fn metrics(&self) -> &DevMetrics {
         &self.metrics
     }
 
-    /// Get activities for programmatic access.
     #[allow(dead_code)]
     pub fn activities(&self) -> &[RepoActivity] {
         &self.activities

@@ -5,65 +5,44 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Mutex;
 
-/// An academic semester with its date range and active status.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Semester {
-    /// Unique semester identifier (e.g. "sem-5")
     pub id: String,
-    /// Semester number (1–8)
     pub number: u8,
-    /// Human-readable name (e.g. "Semester 5")
     pub name: String,
-    /// First day of the semester
     pub start_date: NaiveDate,
-    /// Last day of the semester
     pub end_date: NaiveDate,
-    /// Whether this is the currently active semester
     pub is_current: bool,
 }
 
-/// Institution-level academic configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AcademicConfig {
-    /// Name of the institution
     pub institution: String,
-    /// Degree program (e.g. "B.Tech CSE")
     pub program: String,
-    /// Batch year (e.g. "2023")
     pub batch: String,
-    /// Grading scale used by the institution
     pub grading_scale: GradingScale,
-    /// Total number of semesters in the program
     pub total_semesters: u8,
 }
 
-/// Grading scale variants used by different institutions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GradingScale {
-    /// 10-point CGPA (IIIT Kottayam standard)
     Indian10,
-    /// 4-point GPA
     Indian4,
-    /// Percentage-based grading
     Percentage,
-    /// Letter-grade system (A, B, C, etc.)
     LetterGrade,
 }
 
-/// Thread-safe persistent store for semesters and academic config.
 pub struct SemesterStore {
     conn: Mutex<Connection>,
 }
 
 impl SemesterStore {
-    /// Get a locked reference to the database connection.
     pub fn conn(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
         self.conn
             .lock()
             .map_err(|e| anyhow::anyhow!("Database lock: {}", e))
     }
 
-    /// Opens or creates the academic database at `<project_root>/.devcore/academic.db`.
     pub fn open(project_root: &Path) -> Result<Self> {
         let db_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&db_dir)?;
@@ -167,7 +146,6 @@ impl SemesterStore {
         self.save_config("batch", &config.batch)?;
         self.save_config("total_semesters", &config.total_semesters.to_string())?;
 
-        // Create default semesters
         let current_year = Utc::now().year();
         for sem in 1..=8 {
             let sem_id = format!("sem-{}", sem);
@@ -196,7 +174,6 @@ impl SemesterStore {
             )?;
         }
 
-        // Add default CSE courses for current semester
         let default_courses = vec![
             ("CS301", "Data Structures & Algorithms", 4, "theory"),
             ("CS302", "Operating Systems", 4, "theory"),
@@ -221,7 +198,6 @@ impl SemesterStore {
         Ok(())
     }
 
-    /// Returns the currently active semester, if one exists.
     pub fn current_semester(&self) -> Result<Option<Semester>> {
         let conn = self.conn()?;
         let mut stmt = conn.prepare(
@@ -248,7 +224,6 @@ impl SemesterStore {
         }
     }
 
-    /// Lists all semesters ordered by number.
     pub fn list_semesters(&self) -> Result<Vec<Semester>> {
         let conn = self.conn()?;
         let mut stmt = conn.prepare(
@@ -281,7 +256,6 @@ impl SemesterStore {
         Ok(())
     }
 
-    /// Retrieves a config value by key, or `None` if not found.
     pub fn get_config(&self, key: &str) -> Result<Option<String>> {
         let conn = self.conn()?;
         let mut stmt = conn.prepare("SELECT value FROM config WHERE key = ?1")?;
