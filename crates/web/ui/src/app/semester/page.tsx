@@ -62,7 +62,7 @@ export default function SemesterPage() {
         {semesters.map((sem) => (
           <Card
             key={sem.id}
-            className={`bg-zinc-900 border-zinc-800 cursor-pointer transition-colors ${
+            className={`bg-zinc-900 border-zinc-800 transition-colors ${
               sem.is_current ? "border-emerald-500/50 bg-emerald-500/5" : ""
             }`}
           >

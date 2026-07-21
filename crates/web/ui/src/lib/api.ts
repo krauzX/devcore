@@ -59,14 +59,13 @@ export interface DashboardData {
   sgpa: number | null;
 }
 
-async function fetchApi<T>(endpoint: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${endpoint}`);
+async function fetchApi<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${API_BASE}${endpoint}`, { signal });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
 export const api = {
-  health: () => fetchApi<{ status: string; version: string }>("/api/health"),
   semesters: () => fetchApi<Semester[]>("/api/semesters"),
   currentSemester: () => fetchApi<Semester>("/api/semesters/current"),
   courses: (semesterId: string) =>
