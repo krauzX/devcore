@@ -32,19 +32,36 @@ export default function ResearchPage() {
   const [stats, setStats] = useState<PaperStats | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.papers(), api.paperStats()])
+    const controller = new AbortController();
+    const { signal } = controller;
+    Promise.all([api.papers(signal), api.paperStats(signal)])
       .then(([p, s]) => {
         setPapers(p);
         setStats(s);
       })
-      .catch(console.error)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-96 text-zinc-500">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-rose-400 mb-2">Failed to load research data</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   const filteredPapers = filter === "all" ? papers : papers.filter((p) => p.status === filter);

@@ -24,17 +24,20 @@ export default function SemesterPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [sgpa, setSgpa] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
     Promise.all([
-      api.semesters(),
-      api.currentSemester(),
+      api.semesters(signal),
+      api.currentSemester(signal),
     ])
       .then(([sems, curr]) => {
         setSemesters(sems);
         setCurrent(curr);
         if (curr) {
-          return Promise.all([api.courses(curr.id), api.sgpa(curr.id)]);
+          return Promise.all([api.courses(curr.id, signal), api.sgpa(curr.id, signal)]);
         }
         return Promise.resolve([[] as Course[], null] as [Course[], { semester: string; sgpa: number | null } | null]);
       })
@@ -42,12 +45,26 @@ export default function SemesterPage() {
         setCourses(courses);
         setSgpa(sgpaData?.sgpa ?? null);
       })
-      .catch(console.error)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-96 text-zinc-500">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-rose-400 mb-2">Failed to load semester data</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   return (

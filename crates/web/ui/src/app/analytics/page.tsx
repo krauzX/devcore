@@ -29,13 +29,32 @@ const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"
 export default function AnalyticsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.dashboard().then(setData).catch(console.error).finally(() => setLoading(false));
+    const controller = new AbortController();
+    api.dashboard(controller.signal)
+      .then(setData)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-96 text-zinc-500">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-rose-400 mb-2">Failed to load analytics data</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!data) {

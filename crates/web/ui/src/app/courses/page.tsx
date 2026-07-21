@@ -23,21 +23,38 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [semester, setSemester] = useState<Semester | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.currentSemester()
+    const controller = new AbortController();
+    const { signal } = controller;
+    api.currentSemester(signal)
       .then((sem) => {
         setSemester(sem);
         if (!sem) return Promise.resolve([]);
-        return api.courses(sem.id);
+        return api.courses(sem.id, signal);
       })
       .then(setCourses)
-      .catch(console.error)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-96 text-zinc-500">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-rose-400 mb-2">Failed to load courses</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   const theoryCourses = courses.filter((c) => c.course_type === "theory");

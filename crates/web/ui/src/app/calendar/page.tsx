@@ -25,16 +25,32 @@ const eventTypeConfig: Record<string, { icon: React.ReactNode; color: string }> 
 export default function CalendarPage() {
   const [events, setEvents] = useState<AcademicEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.upcoming()
+    const controller = new AbortController();
+    api.upcoming(controller.signal)
       .then(setEvents)
-      .catch(console.error)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-96 text-zinc-500">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-rose-400 mb-2">Failed to load calendar events</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   // Group events by date

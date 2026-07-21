@@ -86,18 +86,27 @@ async function fetchApi<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
 }
 
 export const api = {
-  semesters: () => fetchApi<Semester[]>("/api/semesters"),
-  currentSemester: () => fetchApi<Semester>("/api/semesters/current"),
-  courses: (semesterId: string) =>
-    fetchApi<Course[]>(`/api/semester/${semesterId}/courses`),
-  sgpa: (semesterId: string) =>
+  semesters: (signal?: AbortSignal) =>
+    fetchApi<Semester[]>("/api/semesters", signal),
+  currentSemester: (signal?: AbortSignal) =>
+    fetchApi<Semester>("/api/semesters/current", signal),
+  courses: (semesterId: string, signal?: AbortSignal) =>
+    fetchApi<Course[]>(`/api/semester/${semesterId}/courses`, signal),
+  sgpa: (semesterId: string, signal?: AbortSignal) =>
     fetchApi<{ semester: string; sgpa: number | null }>(
-      `/api/semester/${semesterId}/sgpa`
+      `/api/semester/${semesterId}/sgpa`,
+      signal
     ),
-  papers: () => fetchApi<Paper[]>("/api/papers"),
-  paperStats: () => fetchApi<PaperStats>("/api/papers/stats"),
-  upcoming: () => fetchApi<AcademicEvent[]>("/api/upcoming"),
-  dashboard: () => fetchApi<DashboardData>("/api/dashboard"),
-  activity: () => fetchApi<ActivityData>("/api/activity"),
-  systemInfo: () => fetchApi<SystemInfo>("/api/system"),
+  papers: (signal?: AbortSignal) =>
+    fetchApi<Paper[]>("/api/papers", signal),
+  paperStats: (signal?: AbortSignal) =>
+    fetchApi<PaperStats>("/api/papers/stats", signal),
+  upcoming: (signal?: AbortSignal) =>
+    fetchApi<AcademicEvent[]>("/api/upcoming", signal),
+  dashboard: (signal?: AbortSignal) =>
+    fetchApi<DashboardData>("/api/dashboard", signal),
+  activity: (signal?: AbortSignal) =>
+    fetchApi<ActivityData>("/api/activity", signal),
+  systemInfo: (signal?: AbortSignal) =>
+    fetchApi<SystemInfo>("/api/system", signal),
 };

@@ -33,15 +33,34 @@ import { api, type DashboardData } from "@/lib/api";
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.dashboard().then(setData).catch(console.error).finally(() => setLoading(false));
+    const controller = new AbortController();
+    api.dashboard(controller.signal)
+      .then(setData)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-zinc-500">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-rose-400 mb-2">Failed to load dashboard</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
+        </div>
       </div>
     );
   }
