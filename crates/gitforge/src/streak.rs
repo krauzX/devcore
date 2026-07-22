@@ -78,9 +78,10 @@ pub fn compute_streak(repo_path: &Path) -> Result<Streak> {
         if last_date == today || last_date == today - chrono::Duration::days(1) {
             let streak_end = dates_vec.len();
             for i in (0..dates_vec.len()).rev() {
-                if i + 1 == streak_end {
-                    current += 1;
-                } else if dates_vec[i + 1] - dates_vec[i] == chrono::Duration::days(1) {
+                let is_first = i + 1 == streak_end;
+                let is_consecutive = i + 1 < streak_end
+                    && dates_vec[i + 1] - dates_vec[i] == chrono::Duration::days(1);
+                if is_first || is_consecutive {
                     current += 1;
                 } else {
                     break;

@@ -93,7 +93,7 @@ fn render_skill_bars(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .find(|sp| sp.axis == *axis)
             .cloned()
-            .unwrap_or_else(|| devcore_gitforge::SkillProgress {
+            .unwrap_or(devcore_gitforge::SkillProgress {
                 axis: *axis,
                 xp: 0,
                 level: 0,

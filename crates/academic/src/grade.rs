@@ -42,11 +42,9 @@ impl GradeEntry {
         let mut total_points = 0.0;
         let mut total_credits = 0;
 
-        for row in rows {
-            if let Ok((grade, credits)) = row {
-                total_points += grade_to_points(&grade) * credits as f64;
-                total_credits += credits;
-            }
+        for (grade, credits) in rows.flatten() {
+            total_points += grade_to_points(&grade) * credits as f64;
+            total_credits += credits;
         }
 
         if total_credits == 0 {

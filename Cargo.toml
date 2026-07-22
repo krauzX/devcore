@@ -18,6 +18,9 @@ license = "MIT"
 
 [workspace.dependencies]
 devcore-core = { path = "crates/core" }
+devcore-academic = { path = "crates/academic" }
+devcore-gitforge = { path = "crates/gitforge" }
+devcore-challenges = { path = "crates/challenges" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 chrono = { version = "0.4.45", features = ["serde"] }
