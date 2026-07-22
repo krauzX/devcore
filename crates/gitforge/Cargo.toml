@@ -1,0 +1,4 @@
+[package]
+name = "devcore-gitforge"
+version.workspace = true
+edition.workspace = true

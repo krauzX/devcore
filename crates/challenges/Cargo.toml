@@ -1,0 +1,4 @@
+[package]
+name = "devcore-challenges"
+version.workspace = true
+edition.workspace = true
