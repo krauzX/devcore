@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use devcore_core::Store;
-use devcore_gitforge::{
+use devcore_devtrack::{
     add_xp, analyze_repo, compute_streak, detect_languages, get_progress, init_skill_schema,
     SkillAxis,
 };

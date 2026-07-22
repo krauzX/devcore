@@ -2,12 +2,14 @@ use ratatui::prelude::*;
 use ratatui::widgets::*;
 
 use crate::app::App;
+use crate::theme;
 use devcore_challenges::Difficulty;
 
 pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .spacing(1)
         .split(area);
 
     render_packs(frame, chunks[0], app);
@@ -16,73 +18,136 @@ pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
 
 fn difficulty_color(diff: &Difficulty) -> Color {
     match diff {
-        Difficulty::Easy => Color::Green,
-        Difficulty::Medium => Color::Yellow,
-        Difficulty::Hard => Color::Red,
+        Difficulty::Easy => theme::GREEN,
+        Difficulty::Medium => theme::YELLOW,
+        Difficulty::Hard => theme::RED,
     }
 }
 
 fn render_packs(frame: &mut Frame, area: Rect, app: &App) {
-    let items: Vec<ListItem> = app
+    let header = Row::new(vec![
+        Cell::from(Span::styled(
+            "Difficulty",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Pack Name",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Problems",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+    ])
+    .style(Style::default().bg(theme::BASE));
+
+    let rows: Vec<Row> = app
         .packs
         .iter()
         .map(|pack| {
             let color = difficulty_color(&pack.difficulty);
-            ListItem::new(Line::from(vec![
-                Span::styled(
-                    format!("[{}] ", pack.difficulty),
+            Row::new(vec![
+                Cell::from(Span::styled(
+                    format!("[{}]", pack.difficulty),
                     Style::default().fg(color),
-                ),
-                Span::styled(
+                )),
+                Cell::from(Span::styled(
                     pack.name.clone(),
-                    Style::default().fg(Color::White),
-                ),
-                Span::styled(
-                    format!(" ({} problems)", pack.problems.len()),
-                    Style::default().fg(Color::DarkGray),
-                ),
-            ]))
+                    Style::default().fg(theme::TEXT),
+                )),
+                Cell::from(Span::styled(
+                    format!("{}", pack.problems.len()),
+                    Style::default().fg(theme::SUBTEXT),
+                )),
+            ])
         })
         .collect();
 
-    let list = List::new(items).block(
+    let table = Table::new(
+        rows,
+        [Constraint::Length(10), Constraint::Min(15), Constraint::Length(10)],
+    )
+    .header(header)
+    .block(
         Block::default()
             .title(format!(" Available Packs ({}) ", app.packs.len()))
-            .borders(Borders::ALL),
-    );
-    frame.render_widget(list, area);
+            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+            .border_type(BorderType::Rounded)
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(theme::OVERLAY))
+            .style(Style::default().bg(theme::SURFACE)),
+    )
+    .column_spacing(1);
+    frame.render_widget(table, area);
 }
 
 fn render_problems(frame: &mut Frame, area: Rect, app: &App) {
-    let all_problems: Vec<_> = app
+    let header = Row::new(vec![
+        Cell::from(Span::styled(
+            "Difficulty",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Problem Name",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Hints",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+    ])
+    .style(Style::default().bg(theme::BASE));
+
+    let rows: Vec<Row> = app
         .packs
         .iter()
         .flat_map(|pack| {
             pack.problems.iter().map(move |problem| {
                 let color = difficulty_color(&problem.difficulty);
-                let hint_count = problem.hints.len();
-                ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("[{}] ", problem.difficulty),
+                Row::new(vec![
+                    Cell::from(Span::styled(
+                        format!("[{}]", problem.difficulty),
                         Style::default().fg(color),
-                    ),
-                    Span::styled(
+                    )),
+                    Cell::from(Span::styled(
                         problem.name.clone(),
-                        Style::default().fg(Color::White),
-                    ),
-                    Span::styled(
-                        format!(" ({} hints)", hint_count),
-                        Style::default().fg(Color::DarkGray),
-                    ),
-                ]))
+                        Style::default().fg(theme::TEXT),
+                    )),
+                    Cell::from(Span::styled(
+                        format!("{}", problem.hints.len()),
+                        Style::default().fg(theme::SUBTEXT),
+                    )),
+                ])
             })
         })
         .collect();
 
-    let list = List::new(all_problems).block(
+    let table = Table::new(
+        rows,
+        [Constraint::Length(10), Constraint::Min(20), Constraint::Length(8)],
+    )
+    .header(header)
+    .block(
         Block::default()
             .title(" All Problems ")
-            .borders(Borders::ALL),
-    );
-    frame.render_widget(list, area);
+            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+            .border_type(BorderType::Rounded)
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(theme::OVERLAY))
+            .style(Style::default().bg(theme::SURFACE)),
+    )
+    .column_spacing(1);
+    frame.render_widget(table, area);
 }

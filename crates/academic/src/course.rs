@@ -10,10 +10,9 @@ pub struct Course {
 }
 
 impl Course {
-    pub fn list_for_semester(conn: &Connection, semester_id: &str) -> Vec<Course> {
+    pub fn list_for_semester(conn: &Connection, semester_id: &str) -> Result<Vec<Course>, rusqlite::Error> {
         let mut stmt = conn
-            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE semester_id = ?1 ORDER BY code")
-            .unwrap();
+            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE semester_id = ?1 ORDER BY code")?;
         let rows = stmt
             .query_map(params![semester_id], |row| {
                 Ok(Course {
@@ -23,12 +22,11 @@ impl Course {
                     code: row.get(3)?,
                     credits: row.get(4)?,
                 })
-            })
-            .unwrap();
-        rows.filter_map(|r| r.ok()).collect()
+            })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
     }
 
-    pub fn add(conn: &Connection, course: &Course) {
+    pub fn add(conn: &Connection, course: &Course) -> Result<(), rusqlite::Error> {
         conn.execute(
             "INSERT INTO courses (id, semester_id, name, code, credits) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
@@ -38,8 +36,8 @@ impl Course {
                 course.code,
                 course.credits,
             ],
-        )
-        .unwrap();
+        )?;
+        Ok(())
     }
 
     pub fn get(conn: &Connection, id: &str) -> Option<Course> {

@@ -99,11 +99,10 @@ impl SemesterStore {
         rows.next().and_then(|r| r.ok())
     }
 
-    pub fn list_semesters(&self) -> Vec<Semester> {
+    pub fn list_semesters(&self) -> Result<Vec<Semester>, rusqlite::Error> {
         let conn = self.conn();
         let mut stmt = conn
-            .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters ORDER BY start_date DESC")
-            .unwrap();
+            .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters ORDER BY start_date DESC")?;
         let rows = stmt
             .query_map([], |row| {
                 Ok(Semester {
@@ -113,23 +112,21 @@ impl SemesterStore {
                     end_date: row.get::<_, String>(3)?.parse().unwrap_or_default(),
                     is_current: row.get::<_, i32>(4)? != 0,
                 })
-            })
-            .unwrap();
-        rows.filter_map(|r| r.ok()).collect()
+            })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
     }
 
-    pub fn set_current_semester(&self, id: &str) {
+    pub fn set_current_semester(&self, id: &str) -> Result<(), rusqlite::Error> {
         let conn = self.conn();
-        conn.execute("UPDATE semesters SET is_current = 0", [])
-            .unwrap();
+        conn.execute("UPDATE semesters SET is_current = 0", [])?;
         conn.execute(
             "UPDATE semesters SET is_current = 1 WHERE id = ?1",
             params![id],
-        )
-        .unwrap();
+        )?;
+        Ok(())
     }
 
-    pub fn add_semester(&self, sem: &Semester) {
+    pub fn add_semester(&self, sem: &Semester) -> Result<(), rusqlite::Error> {
         let conn = self.conn();
         conn.execute(
             "INSERT INTO semesters (id, name, start_date, end_date, is_current) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -140,7 +137,7 @@ impl SemesterStore {
                 sem.end_date.to_string(),
                 sem.is_current as i32,
             ],
-        )
-        .unwrap();
+        )?;
+        Ok(())
     }
 }

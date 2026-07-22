@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 devcore-core.workspace = true
 devcore-academic.workspace = true
-devcore-gitforge.workspace = true
+devcore-devtrack.workspace = true
 devcore-challenges.workspace = true
 devcore-tui = { path = "../tui" }
 devcore-tray = { path = "../crates/tray" }

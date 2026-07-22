@@ -88,12 +88,12 @@ fn show_current_semester(project_root: &Path) -> Result<()> {
 
 fn list_semesters(project_root: &Path) -> Result<()> {
     let store = SemesterStore::open(project_root)?;
-    let semesters = store.list_semesters();
+    let semesters = store.list_semesters().unwrap_or_default();
     for sem in &semesters {
         let marker = if sem.is_current { " *" } else { "" };
         println!(
             "[{}] {} — {} to {}{}",
-            &sem.id[..8], sem.name, sem.start_date, sem.end_date, marker
+            &sem.id.get(..8).unwrap_or(&sem.id), sem.name, sem.start_date, sem.end_date, marker
         );
     }
     Ok(())
@@ -102,7 +102,7 @@ fn list_semesters(project_root: &Path) -> Result<()> {
 fn show_deadlines(project_root: &Path, days: i64) -> Result<()> {
     let store = SemesterStore::open(project_root)?;
     let conn = store.conn();
-    let deadlines = Deadline::upcoming(&conn, days);
+    let deadlines = Deadline::upcoming(&conn, days).unwrap_or_default();
     if deadlines.is_empty() {
         println!("No upcoming deadlines in the next {} days.", days);
     } else {

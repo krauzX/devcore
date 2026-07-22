@@ -1,5 +1,5 @@
 [package]
-name = "devcore-gitforge"
+name = "devcore-devtrack"
 version.workspace = true
 edition.workspace = true
 

@@ -6,7 +6,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use devcore_academic::{Deadline, GradeEntry, SemesterStore};
 use devcore_challenges::{ChallengeEngine, ProblemPack};
 use devcore_core::{DevCoreConfig, Store};
-use devcore_gitforge::{SkillProgress, Streak};
+use devcore_devtrack::{SkillProgress, Streak};
 use ratatui::prelude::*;
 use ratatui::widgets::*;
 
@@ -14,6 +14,7 @@ use crate::academic_tab::render_academic_tab;
 use crate::challenges_tab::render_challenges_tab;
 use crate::dashboard::render_dashboard;
 use crate::git_tab::render_git_tab;
+use crate::theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
@@ -67,7 +68,7 @@ impl App {
         let config = DevCoreConfig::load(project_root)?;
 
         let academic_store = SemesterStore::open(project_root)?;
-        let semesters = academic_store.list_semesters();
+        let semesters = academic_store.list_semesters().unwrap_or_default();
         let current_semester = academic_store.current_semester();
         let sgpa = current_semester.as_ref().and_then(|s| {
             let conn = academic_store.conn();
@@ -75,16 +76,16 @@ impl App {
         });
         let upcoming_deadlines = current_semester.as_ref().map(|_| {
             let conn = academic_store.conn();
-            Deadline::upcoming(&conn, 30)
+            Deadline::upcoming(&conn, 30).unwrap_or_default()
         }).unwrap_or_default();
 
-        let streak = devcore_gitforge::compute_streak(project_root).ok();
+        let streak = devcore_devtrack::compute_streak(project_root).ok();
 
         let core_store = Store::open(project_root)?;
         let skill_progress = {
             let conn = core_store.conn()?;
-            devcore_gitforge::init_skill_schema(&conn).ok();
-            devcore_gitforge::get_progress(&conn).unwrap_or_default()
+            devcore_devtrack::init_skill_schema(&conn).ok();
+            devcore_devtrack::get_progress(&conn).unwrap_or_default()
         };
 
         let engine = ChallengeEngine::new(project_root);
@@ -93,7 +94,12 @@ impl App {
         let solved_count = {
             let conn = core_store.conn()?;
             devcore_challenges::progress::init_challenge_schema(&conn).ok();
-            0
+            conn.query_row(
+                "SELECT COUNT(*) FROM challenge_progress WHERE solved = 1",
+                [],
+                |row| row.get::<_, usize>(0),
+            )
+            .unwrap_or(0)
         };
 
         Ok(Self {
@@ -113,10 +119,7 @@ impl App {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        ratatui::init();
-
         let result = self.event_loop();
-
         ratatui::restore();
         result
     }
@@ -160,24 +163,31 @@ impl App {
 
         let block = Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan))
-            .title(" DevCore TUI ");
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(theme::MAUVE))
+            .title(Span::styled(
+                " DevCore TUI ",
+                Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD),
+            ))
+            .style(Style::default().bg(theme::BASE));
 
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Min(0)])
+            .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(1)])
             .split(inner);
 
         let spans: Vec<Span> = Tab::all()
             .iter()
             .map(|tab| {
                 let style = if *tab == self.active_tab {
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+                    Style::default()
+                        .fg(theme::YELLOW)
+                        .add_modifier(Modifier::BOLD)
                 } else {
-                    Style::default().fg(Color::Gray)
+                    Style::default().fg(theme::SUBTEXT)
                 };
                 Span::styled(
                     format!(" {} {} ", tab.key(), tab.title()),
@@ -194,5 +204,18 @@ impl App {
             Tab::Git => render_git_tab(frame, chunks[1], self),
             Tab::Challenges => render_challenges_tab(frame, chunks[1], self),
         }
+
+        let status_bar = Line::from(vec![
+            Span::styled(" 1-4 ", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD)),
+            Span::styled("Tab ", Style::default().fg(theme::SUBTEXT)),
+            Span::styled("│", Style::default().fg(theme::OVERLAY)),
+            Span::styled(" q ", Style::default().fg(theme::RED).add_modifier(Modifier::BOLD)),
+            Span::styled("Quit ", Style::default().fg(theme::SUBTEXT)),
+            Span::styled("│", Style::default().fg(theme::OVERLAY)),
+            Span::styled(" Tab ", Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD)),
+            Span::styled("Next ", Style::default().fg(theme::SUBTEXT)),
+        ])
+        .style(Style::default().bg(theme::SURFACE));
+        frame.render_widget(status_bar, chunks[2]);
     }
 }

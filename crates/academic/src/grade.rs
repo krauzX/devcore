@@ -54,11 +54,11 @@ impl GradeEntry {
         }
     }
 
-    pub fn add(conn: &Connection, entry: &GradeEntry) {
+    pub fn add(conn: &Connection, entry: &GradeEntry) -> Result<(), rusqlite::Error> {
         conn.execute(
             "INSERT INTO grades (id, course_id, semester_id, grade) VALUES (?1, ?2, ?3, ?4)",
             params![entry.id, entry.course_id, entry.semester_id, entry.grade],
-        )
-        .unwrap();
+        )?;
+        Ok(())
     }
 }

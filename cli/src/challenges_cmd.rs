@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use devcore_challenges::{ChallengeEngine, Difficulty};
+use devcore_challenges::{ChallengeEngine, Difficulty, LeetCodeClient};
 
 #[derive(Parser)]
 pub struct DsaCmd {
@@ -29,12 +29,37 @@ pub enum DsaAction {
     ByDifficulty {
         level: String,
     },
+    #[command(name = "leetcode")]
+    Leetcode(LeetcodeCmd),
+}
+
+#[derive(Parser)]
+pub struct LeetcodeCmd {
+    #[command(subcommand)]
+    pub action: LeetcodeAction,
+}
+
+#[derive(Subcommand)]
+pub enum LeetcodeAction {
+    List {
+        #[arg(long, default_value = "all")]
+        difficulty: String,
+        #[arg(long, default_value_t = 10)]
+        limit: usize,
+        #[arg(long)]
+        tags: Option<Vec<String>>,
+    },
+    Daily,
+    Show {
+        title_slug: String,
+    },
 }
 
 pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
     let mut engine = ChallengeEngine::new(project_root);
 
     match cmd.action {
+        DsaAction::Leetcode(lc_cmd) => return run_leetcode(lc_cmd),
         DsaAction::List => {
             let available = engine.list_available();
             println!("Available Packs:");
@@ -141,6 +166,45 @@ pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
                     );
                 }
             }
+        }
+    }
+    Ok(())
+}
+
+fn run_leetcode(cmd: LeetcodeCmd) -> Result<()> {
+    let client = LeetCodeClient::new();
+
+    match cmd.action {
+        LeetcodeAction::List {
+            difficulty,
+            limit,
+            tags,
+        } => {
+            let diff = if difficulty == "all" {
+                None
+            } else {
+                Some(difficulty.as_str())
+            };
+            let tag_refs = tags.as_deref();
+            let problems = client.fetch_problem_list(diff, tag_refs, limit)?;
+            println!(
+                "{}",
+                devcore_challenges::leetcode::format_problem_list(&problems)
+            );
+        }
+        LeetcodeAction::Daily => {
+            let problem = client.fetch_daily_challenge()?;
+            println!(
+                "{}",
+                devcore_challenges::leetcode::format_problem(&problem)
+            );
+        }
+        LeetcodeAction::Show { title_slug } => {
+            let problem = client.fetch_problem_with_meta(&title_slug)?;
+            println!(
+                "{}",
+                devcore_challenges::leetcode::format_problem(&problem)
+            );
         }
     }
     Ok(())

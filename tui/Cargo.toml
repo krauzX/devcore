@@ -6,7 +6,7 @@ edition.workspace = true
 [dependencies]
 devcore-core.workspace = true
 devcore-academic.workspace = true
-devcore-gitforge.workspace = true
+devcore-devtrack.workspace = true
 devcore-challenges.workspace = true
 ratatui.workspace = true
 crossterm.workspace = true

@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "crates/core",
     "crates/academic",
-    "crates/gitforge",
+    "crates/devtrack",
     "crates/challenges",
     "crates/tray",
     "tui",
@@ -19,7 +19,7 @@ license = "MIT"
 [workspace.dependencies]
 devcore-core = { path = "crates/core" }
 devcore-academic = { path = "crates/academic" }
-devcore-gitforge = { path = "crates/gitforge" }
+devcore-devtrack = { path = "crates/devtrack" }
 devcore-challenges = { path = "crates/challenges" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
@@ -37,3 +37,4 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 walkdir = "2.5.0"
 uuid = { version = "1.24.0", features = ["v4"] }
 dirs = "5.0.1"
+reqwest = { version = "0.12", features = ["blocking", "json"] }

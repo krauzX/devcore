@@ -54,7 +54,7 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
         }
         AcademicAction::List => {
             let store = SemesterStore::open(project_root)?;
-            let semesters = store.list_semesters();
+            let semesters = store.list_semesters()?;
             if semesters.is_empty() {
                 println!("No semesters found.");
             } else {
@@ -86,25 +86,25 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
                 end_date,
                 is_current: false,
             };
-            store.add_semester(&sem);
+            store.add_semester(&sem)?;
             println!("Added semester '{}' with id {}", sem.name, id);
         }
         AcademicAction::Set { id } => {
             let store = SemesterStore::open(project_root)?;
-            store.set_current_semester(&id);
+            store.set_current_semester(&id)?;
             println!("Set current semester to {}", id);
         }
         AcademicAction::Deadlines { days } => {
             let store = SemesterStore::open(project_root)?;
             let conn = store.conn();
-            let deadlines = Deadline::upcoming(&conn, days);
+            let deadlines = Deadline::upcoming(&conn, days)?;
             if deadlines.is_empty() {
                 println!("No upcoming deadlines in the next {} days.", days);
             } else {
                 for d in &deadlines {
                     println!(
                         "[{}] {} — due {}",
-                        &d.id[..8],
+                        &d.id.get(..8).unwrap_or(&d.id),
                         d.title,
                         d.due_date
                     );
@@ -131,7 +131,7 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
                 due_date,
                 completed: false,
             };
-            Deadline::add(&conn, &deadline);
+            Deadline::add(&conn, &deadline)?;
             println!("Added deadline '{}' due {}", deadline.title, deadline.due_date);
         }
     }
