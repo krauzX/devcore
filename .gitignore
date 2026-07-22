@@ -4,6 +4,7 @@
 *.db-journal
 *.db-wal
 *.db-shm
+*.txt
 .DS_Store
 Thumbs.db
 desktop.ini
