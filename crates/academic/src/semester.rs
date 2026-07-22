@@ -76,12 +76,14 @@ impl SemesterStore {
         })
     }
 
-    pub fn conn(&self) -> MutexGuard<'_, Connection> {
-        self.conn.lock().expect("lock poisoned")
+    pub fn conn(&self) -> Result<MutexGuard<'_, Connection>, String> {
+        self.conn
+            .lock()
+            .map_err(|e| format!("lock poisoned: {}", e))
     }
 
     pub fn current_semester(&self) -> Option<Semester> {
-        let conn = self.conn();
+        let conn = self.conn().ok()?;
         let mut stmt = conn
             .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters WHERE is_current = 1")
             .ok()?;
@@ -100,7 +102,7 @@ impl SemesterStore {
     }
 
     pub fn list_semesters(&self) -> Result<Vec<Semester>, rusqlite::Error> {
-        let conn = self.conn();
+        let conn = self.conn().map_err(rusqlite::Error::InvalidParameterName)?;
         let mut stmt = conn
             .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters ORDER BY start_date DESC")?;
         let rows = stmt
@@ -117,7 +119,7 @@ impl SemesterStore {
     }
 
     pub fn set_current_semester(&self, id: &str) -> Result<(), rusqlite::Error> {
-        let conn = self.conn();
+        let conn = self.conn().map_err(rusqlite::Error::InvalidParameterName)?;
         conn.execute("UPDATE semesters SET is_current = 0", [])?;
         conn.execute(
             "UPDATE semesters SET is_current = 1 WHERE id = ?1",
@@ -127,7 +129,7 @@ impl SemesterStore {
     }
 
     pub fn add_semester(&self, sem: &Semester) -> Result<(), rusqlite::Error> {
-        let conn = self.conn();
+        let conn = self.conn().map_err(rusqlite::Error::InvalidParameterName)?;
         conn.execute(
             "INSERT INTO semesters (id, name, start_date, end_date, is_current) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![

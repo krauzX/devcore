@@ -96,7 +96,7 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
         }
         AcademicAction::Deadlines { days } => {
             let store = SemesterStore::open(project_root)?;
-            let conn = store.conn();
+            let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
             let deadlines = Deadline::upcoming(&conn, days)?;
             if deadlines.is_empty() {
                 println!("No upcoming deadlines in the next {} days.", days);
@@ -122,7 +122,7 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
                 .ok_or_else(|| anyhow::anyhow!("No current semester set. Use 'set' first."))?;
             let due_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
                 .map_err(|e| anyhow::anyhow!("Invalid date '{}': {}", date, e))?;
-            let conn = store.conn();
+            let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
             let deadline = Deadline {
                 id: Uuid::new_v4().to_string(),
                 semester_id: current.id,

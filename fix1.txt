@@ -1,0 +1,4 @@
+    Checking devcore-core v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\crates\core)
+    Checking devcore-academic v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\crates\academic)
+       Fixed crates\academic\src\semester.rs (3 fixes)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.95s

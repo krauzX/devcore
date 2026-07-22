@@ -101,7 +101,7 @@ fn list_semesters(project_root: &Path) -> Result<()> {
 
 fn show_deadlines(project_root: &Path, days: i64) -> Result<()> {
     let store = SemesterStore::open(project_root)?;
-    let conn = store.conn();
+    let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
     let deadlines = Deadline::upcoming(&conn, days).unwrap_or_default();
     if deadlines.is_empty() {
         println!("No upcoming deadlines in the next {} days.", days);

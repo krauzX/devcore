@@ -89,7 +89,7 @@ pub fn get_progress(conn: &Connection) -> Result<Vec<SkillProgress>, ProgressErr
         Ok((axis_str, xp))
     })?;
 
-    let mut results = Vec::new();
+    let mut skill_entries = Vec::new();
     for row in rows {
         let (axis_str, xp) = row?;
         let axis = match axis_str.as_str() {
@@ -100,10 +100,10 @@ pub fn get_progress(conn: &Connection) -> Result<Vec<SkillProgress>, ProgressErr
             "architecture" => SkillAxis::Architecture,
             _ => continue,
         };
-        results.push(SkillProgress::from_xp(axis, xp));
+        skill_entries.push(SkillProgress::from_xp(axis, xp));
     }
 
-    Ok(results)
+    Ok(skill_entries)
 }
 
 pub fn add_xp(

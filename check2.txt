@@ -1,0 +1,156 @@
+    Checking devcore-academic v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\crates\academic)
+    Checking devcore-devtrack v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\crates\devtrack)
+    Checking devcore-challenges v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\crates\challenges)
+error[E0599]: no method named `prepare` found for enum `Result<T, E>` in the current scope
+   --> crates\academic\src\semester.rs:88:14
+    |
+ 87 |           let mut stmt = conn
+    |  ________________________-
+ 88 | |             .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters WHERE is_current = 1")
+    | |             -^^^^^^^ method not found in `Result<std::sync::MutexGuard<'_, Connection>, String>`
+    | |_____________|
+    |
+    |
+note: the method `prepare` exists on the type `std::sync::MutexGuard<'_, Connection>`
+   --> C:\Users\aryan\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rusqlite-0.35.0\src\lib.rs:772:5
+    |
+772 |     pub fn prepare(&self, sql: &str) -> Result<Statement<'_>> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: consider using `Result::expect` to unwrap the `std::sync::MutexGuard<'_, Connection>` value, panicking if the value is a `Result::Err`
+    |
+ 87 |         let mut stmt = conn.expect("REASON")
+    |                            +++++++++++++++++
+
+error[E0282]: type annotations needed
+  --> crates\academic\src\semester.rs:91:29
+   |
+91 |             .query_map([], |row| {
+   |                             ^^^
+92 |                 Ok(Semester {
+93 |                     id: row.get(0)?,
+   |                         --- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+91 |             .query_map([], |row: /* Type */| {
+   |                                ++++++++++++
+
+error[E0282]: type annotations needed
+   --> crates\academic\src\semester.rs:101:31
+    |
+101 |         rows.next().and_then(|r| r.ok())
+    |                               ^  - type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+101 |         rows.next().and_then(|r: /* Type */| r.ok())
+    |                                ++++++++++++
+
+error[E0599]: no method named `prepare` found for enum `Result<T, E>` in the current scope
+   --> crates\academic\src\semester.rs:107:14
+    |
+106 |           let mut stmt = conn
+    |  ________________________-
+107 | |             .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters ORDER BY start_date DESC")?;
+    | |             -^^^^^^^ method not found in `Result<std::sync::MutexGuard<'_, Connection>, String>`
+    | |_____________|
+    |
+    |
+note: the method `prepare` exists on the type `std::sync::MutexGuard<'_, Connection>`
+   --> C:\Users\aryan\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rusqlite-0.35.0\src\lib.rs:772:5
+    |
+772 |     pub fn prepare(&self, sql: &str) -> Result<Statement<'_>> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use the `?` operator to extract the `std::sync::MutexGuard<'_, Connection>` value, propagating a `Result::Err` value to the caller
+    |
+106 |         let mut stmt = conn?
+    |                            +
+
+error[E0282]: type annotations needed
+   --> crates\academic\src\semester.rs:109:29
+    |
+109 |             .query_map([], |row| {
+    |                             ^^^
+110 |                 Ok(Semester {
+111 |                     id: row.get(0)?,
+    |                         --- type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+109 |             .query_map([], |row: /* Type */| {
+    |                                ++++++++++++
+
+error[E0282]: type annotations needed
+   --> crates\academic\src\semester.rs:118:29
+    |
+118 |         Ok(rows.filter_map(|r| r.ok()).collect())
+    |                             ^  - type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+118 |         Ok(rows.filter_map(|r: /* Type */| r.ok()).collect())
+    |                              ++++++++++++
+
+error[E0599]: no method named `execute` found for enum `Result<T, E>` in the current scope
+   --> crates\academic\src\semester.rs:123:14
+    |
+123 |         conn.execute("UPDATE semesters SET is_current = 0", [])?;
+    |              ^^^^^^^ method not found in `Result<std::sync::MutexGuard<'_, Connection>, String>`
+    |
+note: the method `execute` exists on the type `std::sync::MutexGuard<'_, Connection>`
+   --> C:\Users\aryan\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rusqlite-0.35.0\src\lib.rs:638:5
+    |
+638 |     pub fn execute<P: Params>(&self, sql: &str, params: P) -> Result<usize> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use the `?` operator to extract the `std::sync::MutexGuard<'_, Connection>` value, propagating a `Result::Err` value to the caller
+    |
+123 |         conn?.execute("UPDATE semesters SET is_current = 0", [])?;
+    |             +
+
+error[E0599]: no method named `execute` found for enum `Result<T, E>` in the current scope
+   --> crates\academic\src\semester.rs:124:14
+    |
+124 |         conn.execute(
+    |         -----^^^^^^^ method not found in `Result<std::sync::MutexGuard<'_, Connection>, String>`
+    |
+note: the method `execute` exists on the type `std::sync::MutexGuard<'_, Connection>`
+   --> C:\Users\aryan\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rusqlite-0.35.0\src\lib.rs:638:5
+    |
+638 |     pub fn execute<P: Params>(&self, sql: &str, params: P) -> Result<usize> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use the `?` operator to extract the `std::sync::MutexGuard<'_, Connection>` value, propagating a `Result::Err` value to the caller
+    |
+124 |         conn?.execute(
+    |             +
+
+error[E0599]: no method named `execute` found for enum `Result<T, E>` in the current scope
+   --> crates\academic\src\semester.rs:133:14
+    |
+133 |         conn.execute(
+    |         -----^^^^^^^ method not found in `Result<std::sync::MutexGuard<'_, Connection>, String>`
+    |
+note: the method `execute` exists on the type `std::sync::MutexGuard<'_, Connection>`
+   --> C:\Users\aryan\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rusqlite-0.35.0\src\lib.rs:638:5
+    |
+638 |     pub fn execute<P: Params>(&self, sql: &str, params: P) -> Result<usize> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use the `?` operator to extract the `std::sync::MutexGuard<'_, Connection>` value, propagating a `Result::Err` value to the caller
+    |
+133 |         conn?.execute(
+    |             +
+
+Some errors have detailed explanations: E0282, E0599.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `devcore-academic` (lib) due to 9 previous errors
+warning: build failed, waiting for other jobs to finish...
+warning: field `total` is never read
+   --> crates\challenges\src\leetcode.rs:101:5
+    |
+100 | struct ProblemSetQuestionList {
+    |        ---------------------- field in this struct
+101 |     total: usize,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `devcore-challenges` (lib) generated 1 warning

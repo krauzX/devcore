@@ -176,11 +176,11 @@ pub fn detect_languages(path: &Path) -> Vec<LanguageStat> {
         }
     }
 
-    let mut result: Vec<LanguageStat> = stats
+    let mut language_stats: Vec<LanguageStat> = stats
         .into_iter()
         .map(|(name, (files, lines))| LanguageStat { name, files, lines })
         .collect();
 
-    result.sort_by(|a, b| b.lines.cmp(&a.lines));
-    result
+    language_stats.sort_by(|a, b| b.lines.cmp(&a.lines));
+    language_stats
 }

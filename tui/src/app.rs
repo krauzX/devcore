@@ -71,12 +71,12 @@ impl App {
         let semesters = academic_store.list_semesters().unwrap_or_default();
         let current_semester = academic_store.current_semester();
         let sgpa = current_semester.as_ref().and_then(|s| {
-            let conn = academic_store.conn();
+            let conn = academic_store.conn().ok()?;
             GradeEntry::compute_sgpa(&conn, &s.id)
         });
-        let upcoming_deadlines = current_semester.as_ref().map(|_| {
-            let conn = academic_store.conn();
-            Deadline::upcoming(&conn, 30).unwrap_or_default()
+        let upcoming_deadlines = current_semester.as_ref().and_then(|_| {
+            let conn = academic_store.conn().ok()?;
+            Some(Deadline::upcoming(&conn, 30).unwrap_or_default())
         }).unwrap_or_default();
 
         let streak = devcore_devtrack::compute_streak(project_root).ok();
@@ -119,9 +119,9 @@ impl App {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        let result = self.event_loop();
+        let exit_status = self.event_loop();
         ratatui::restore();
-        result
+        exit_status
     }
 
     fn event_loop(&mut self) -> Result<()> {

@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use devcore_challenges::{ChallengeEngine, Difficulty, LeetCodeClient};
+use devcore_challenges::{ChallengeEngine, Difficulty, LeetCodeClient, ProjectEngine};
 
 #[derive(Parser)]
 pub struct DsaCmd {
@@ -31,6 +31,28 @@ pub enum DsaAction {
     },
     #[command(name = "leetcode")]
     Leetcode(LeetcodeCmd),
+    #[command(name = "project")]
+    Project(ProjectCmd),
+}
+
+#[derive(Parser)]
+pub struct ProjectCmd {
+    #[command(subcommand)]
+    pub action: ProjectAction,
+}
+
+#[derive(Subcommand)]
+pub enum ProjectAction {
+    List,
+    Install {
+        project_id: String,
+    },
+    Remove {
+        project_id: String,
+    },
+    Show {
+        project_id: String,
+    },
 }
 
 #[derive(Parser)]
@@ -60,6 +82,7 @@ pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
 
     match cmd.action {
         DsaAction::Leetcode(lc_cmd) => return run_leetcode(lc_cmd),
+        DsaAction::Project(proj_cmd) => return run_project(proj_cmd, project_root),
         DsaAction::List => {
             let available = engine.list_available();
             println!("Available Packs:");
@@ -172,7 +195,7 @@ pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
 }
 
 fn run_leetcode(cmd: LeetcodeCmd) -> Result<()> {
-    let client = LeetCodeClient::new();
+    let client = LeetCodeClient::new().map_err(|e| anyhow::anyhow!(e))?;
 
     match cmd.action {
         LeetcodeAction::List {
@@ -205,6 +228,58 @@ fn run_leetcode(cmd: LeetcodeCmd) -> Result<()> {
                 "{}",
                 devcore_challenges::leetcode::format_problem(&problem)
             );
+        }
+    }
+    Ok(())
+}
+
+fn run_project(cmd: ProjectCmd, project_root: &Path) -> Result<()> {
+    let data_dir = project_root.join(".devcore").join("projects");
+    let engine = ProjectEngine::new(&data_dir);
+
+    match cmd.action {
+        ProjectAction::List => {
+            let available = engine.list_available();
+            let installed = engine.list_installed();
+            println!("Available Projects:");
+            for p in available {
+                let status = if installed.iter().any(|i| i.id == p.id) { " [installed]" } else { "" };
+                println!(
+                    "  {} — {} ({}, {} stages){}",
+                    p.id, p.name, p.difficulty, p.stages.len(), status
+                );
+            }
+        }
+        ProjectAction::Install { project_id } => {
+            let mut engine_mut = ProjectEngine::new(&data_dir);
+            engine_mut.install_project(&project_id).map_err(|e| anyhow::anyhow!(e))?;
+            println!("Installed project '{}'.", project_id);
+        }
+        ProjectAction::Remove { project_id } => {
+            let mut engine_mut = ProjectEngine::new(&data_dir);
+            engine_mut.remove_project(&project_id).map_err(|e| anyhow::anyhow!(e))?;
+            println!("Removed project '{}'.", project_id);
+        }
+        ProjectAction::Show { project_id } => {
+            if let Some(p) = engine.get_project(&project_id) {
+                println!("{}", p.name);
+                println!("{}", "=".repeat(p.name.len()));
+                println!();
+                println!("{}", p.description);
+                println!();
+                println!("Language: {}", p.language);
+                println!("Difficulty: {}", p.difficulty);
+                println!("Stages: {}", p.stages.len());
+                println!();
+                for (i, stage) in p.stages.iter().enumerate() {
+                    println!("  {}. {} — {}", i + 1, stage.name, stage.description);
+                }
+                println!();
+                println!("Readme:");
+                println!("{}", p.readme);
+            } else {
+                println!("Project '{}' not found.", project_id);
+            }
         }
     }
     Ok(())

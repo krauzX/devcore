@@ -184,12 +184,12 @@ pub struct LeetCodeClient {
 }
 
 impl LeetCodeClient {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, anyhow::Error> {
         let client = Client::builder()
             .user_agent("devcore/0.1")
             .build()
-            .expect("failed to build HTTP client");
-        Self { client }
+            .context("failed to build HTTP client")?;
+        Ok(Self { client })
     }
 
     pub fn fetch_problem_list(

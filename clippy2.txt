@@ -1,0 +1,4 @@
+    Checking devcore-challenges v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\crates\challenges)
+    Checking devcore-tui v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\tui)
+    Checking devcore v0.1.0 (C:\Users\aryan\AndroidStudioProjects\WEB\extensions\New folder\devcore\cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.87s

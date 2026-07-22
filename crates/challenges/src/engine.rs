@@ -27,8 +27,8 @@ impl ChallengeEngine {
                 let path = entry.path();
                 if path.is_dir() {
                     let pack_file = path.join("pack.json");
-                    if let Ok(data) = fs::read_to_string(&pack_file) {
-                        if let Ok(mut pack) = serde_json::from_str::<ProblemPack>(&data) {
+                    if let Ok(pack_content) = fs::read_to_string(&pack_file) {
+                        if let Ok(mut pack) = serde_json::from_str::<ProblemPack>(&pack_content) {
                             pack.installed = true;
                             packs.push(pack);
                         }

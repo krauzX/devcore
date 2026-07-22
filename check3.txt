@@ -1,0 +1,12 @@
+warning: field `total` is never read
+   --> crates\challenges\src\leetcode.rs:101:5
+    |
+100 | struct ProblemSetQuestionList {
+    |        ---------------------- field in this struct
+101 |     total: usize,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `devcore-challenges` (lib) generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.50s
