@@ -2,3 +2,14 @@
 name = "devcore-challenges"
 version.workspace = true
 edition.workspace = true
+
+[dependencies]
+devcore-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rusqlite.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+uuid.workspace = true
+dirs.workspace = true
