@@ -2,3 +2,17 @@
 name = "devcore-tui"
 version.workspace = true
 edition.workspace = true
+
+[dependencies]
+devcore-core.workspace = true
+devcore-academic.workspace = true
+devcore-gitforge.workspace = true
+devcore-challenges.workspace = true
+ratatui.workspace = true
+crossterm.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+git2.workspace = true
+dirs.workspace = true
