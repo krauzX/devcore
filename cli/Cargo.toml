@@ -1,4 +1,23 @@
 [package]
-name = "devcore-cli"
+name = "devcore"
 version.workspace = true
 edition.workspace = true
+
+[[bin]]
+name = "devcore"
+path = "src/main.rs"
+
+[dependencies]
+devcore-core.workspace = true
+devcore-academic.workspace = true
+devcore-gitforge.workspace = true
+devcore-challenges.workspace = true
+devcore-tui = { path = "../tui" }
+devcore-tray = { path = "../crates/tray" }
+clap.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+dirs.workspace = true
+chrono.workspace = true
+uuid.workspace = true
