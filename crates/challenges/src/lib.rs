@@ -8,4 +8,4 @@ pub use engine::{ChallengeEngine, OfflineProblem, OfflineProblemListResult, Onli
 pub use leetcode::{CodeSnippet, LeetCodeClient, LeetCodeProblem, ProblemListItem, TopicTag};
 pub use pack::{Difficulty, Problem, ProblemPack};
 pub use progress::{ChallengeProgress, PackStats, RecordAttemptError};
-pub use projects::{ProjectEngine, ProjectPack};
+pub use projects::{ProjectEngine, ProjectPack, ProjectProgress};

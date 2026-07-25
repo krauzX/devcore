@@ -4,7 +4,7 @@ use ratatui::widgets::*;
 use crate::app::XpField;
 use crate::theme;
 use devcore_academic::UrgencyLevel;
-use devcore_challenges::{Problem, ProjectPack};
+use devcore_challenges::{Problem, ProjectPack, ProjectProgress};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StatusKind {
@@ -413,7 +413,7 @@ pub fn render_problem_detail(frame: &mut Frame, area: Rect, problem: &Problem) {
     frame.render_widget(footer, chunks[2]);
 }
 
-pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPack) {
+pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPack, progress: Option<&ProjectProgress>) {
     let popup_width = (area.width as usize).clamp(50, 90) as u16;
     let popup_height = (area.height as usize).clamp(15, 35) as u16;
     let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
@@ -441,6 +441,7 @@ pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPac
         .constraints([
             Constraint::Length(3),
             Constraint::Min(3),
+            Constraint::Length(3),
             Constraint::Length(1),
             Constraint::Min(2),
         ])
@@ -476,12 +477,54 @@ pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPac
         .wrap(Wrap { trim: false });
     frame.render_widget(desc, chunks[1]);
 
+    if let Some(prog) = progress {
+        let completed = prog.completed_stages.len();
+        let total = project.stages.len();
+        let pct = if total > 0 {
+            (completed as f64 / total as f64 * 100.0) as u32
+        } else {
+            0
+        };
+
+        let progress_color = if prog.is_complete() {
+            theme::GREEN
+        } else {
+            theme::YELLOW
+        };
+
+        let status_text = if prog.is_complete() {
+            "COMPLETE".to_string()
+        } else {
+            format!("Stage {}/{}", prog.current_stage + 1, total)
+        };
+
+        let header = Paragraph::new(Line::from(vec![
+            Span::styled(
+                format!("{}/{} ({:.0}%) ", completed, total, pct),
+                Style::default()
+                    .fg(progress_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                status_text,
+                Style::default().fg(theme::SUBTEXT),
+            ),
+        ]));
+        frame.render_widget(header, chunks[2]);
+    } else {
+        let header = Paragraph::new(Line::from(Span::styled(
+            "Not started",
+            Style::default().fg(theme::SUBTEXT),
+        )));
+        frame.render_widget(header, chunks[2]);
+    }
+
     let footer = Paragraph::new(Line::from(Span::styled(
         " Press Esc to close ",
         Style::default().fg(theme::SUBTEXT),
     )))
     .alignment(Alignment::Center);
-    frame.render_widget(footer, chunks[2]);
+    frame.render_widget(footer, chunks[3]);
 
     if !project.readme.is_empty() {
         let readme_text = if project.readme.chars().count() > 500 {
@@ -502,7 +545,7 @@ pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPac
         let readme = Paragraph::new(readme_text.as_str())
             .style(Style::default().fg(theme::TEXT))
             .wrap(Wrap { trim: false });
-        frame.render_widget(readme.block(readme_block), chunks[3]);
+        frame.render_widget(readme.block(readme_block), chunks[4]);
     }
 }
 

@@ -6,6 +6,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use devcore_academic::{Course, Deadline, GradeEntry, SemesterStore};
 use devcore_challenges::{
     ChallengeEngine, Difficulty, OfflineProblem, ProblemPack, ProjectEngine, ProjectPack,
+    ProjectProgress,
 };
 use devcore_core::{DevCoreConfig, Store};
 use devcore_devtrack::{LanguageStat, RepoAnalysis, SkillAxis, SkillProgress, Streak};
@@ -123,6 +124,7 @@ pub struct App {
     pub(crate) projects: Vec<ProjectPack>,
     pub(crate) selected_project: Option<usize>,
     pub(crate) installed_pack_ids: Vec<String>,
+    pub(crate) project_progress: Vec<ProjectProgress>,
 }
 
 impl App {
@@ -186,6 +188,7 @@ impl App {
 
         let project_engine = ProjectEngine::new(&data_dir);
         let projects = project_engine.list_available().to_vec();
+        let project_progress = project_engine.list_progress();
 
         Ok(Self {
             should_quit: false,
@@ -229,6 +232,7 @@ impl App {
             projects,
             selected_project: None,
             installed_pack_ids,
+            project_progress,
         })
     }
 
@@ -263,6 +267,12 @@ impl App {
         self.packs = engine.list_available().to_vec();
         self.installed_count = engine.list_installed().len();
         self.installed_pack_ids = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
+    }
+
+    fn refresh_project_progress(&mut self) {
+        let data_dir = self.project_root.join(".devcore");
+        let engine = ProjectEngine::new(&data_dir);
+        self.project_progress = engine.list_progress();
     }
 
     fn get_difficulty_str(&self) -> Option<&'static str> {
@@ -719,6 +729,57 @@ impl App {
                     }
                 }
             }
+            KeyCode::Char('c') if self.show_projects => {
+                if let Some(idx) = self.selected_project {
+                    if idx < self.projects.len() {
+                        let project_id = self.projects[idx].id.clone();
+                        let data_dir = self.project_root.join(".devcore");
+                        let mut engine = ProjectEngine::new(&data_dir);
+                        match engine.get_progress(&project_id) {
+                            Some(prog) if !prog.is_complete() => {
+                                let current_stage = prog.current_stage;
+                                match engine.set_stage_completed(&project_id, current_stage) {
+                                    Ok(()) => {
+                                        self.status_msg = Some(format!(
+                                            "Marked stage {} as complete for '{}'",
+                                            current_stage + 1,
+                                            self.projects[idx].name
+                                        ));
+                                        self.refresh_project_progress();
+                                    }
+                                    Err(e) => {
+                                        self.status_msg = Some(format!("Failed to complete stage: {}", e));
+                                    }
+                                }
+                            }
+                            Some(_) => {
+                                self.status_msg = Some(format!(
+                                    "Project '{}' is already complete!",
+                                    self.projects[idx].name
+                                ));
+                            }
+                            None => {
+                                let total = self.projects[idx].stages.len();
+                                let mut progress = ProjectProgress::new(&project_id, total);
+                                progress.completed_stages.push(0);
+                                progress.current_stage = 1.min(total - 1);
+                                match engine.save_progress(&progress) {
+                                    Ok(()) => {
+                                        self.status_msg = Some(format!(
+                                            "Started project '{}' and marked stage 1 as complete",
+                                            self.projects[idx].name
+                                        ));
+                                        self.refresh_project_progress();
+                                    }
+                                    Err(e) => {
+                                        self.status_msg = Some(format!("Failed to start project: {}", e));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             KeyCode::Enter => {
                 if self.show_projects && self.selected_project.is_some() {
                     self.input_mode = InputMode::ViewingProjectDetail;
@@ -995,6 +1056,7 @@ impl App {
                     widgets::KeyBinding { key: "Enter", label: "Detail", color: theme::BLUE },
                     widgets::KeyBinding { key: "e/m/h/a", label: "Filter", color: theme::YELLOW },
                     widgets::KeyBinding { key: "o", label: "Projects", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "c", label: "Complete Stage", color: theme::GREEN },
                     widgets::KeyBinding { key: "n/p", label: "Page", color: theme::TEAL },
                     widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
                 ],
@@ -1049,7 +1111,8 @@ impl App {
                 if let Some(idx) = self.selected_project {
                     if idx < self.projects.len() {
                         let project = &self.projects[idx];
-                        widgets::render_project_detail(frame, area, project);
+                        let progress = self.project_progress.iter().find(|p| p.project_id == project.id);
+                        widgets::render_project_detail(frame, area, project, progress);
                     }
                 }
             }

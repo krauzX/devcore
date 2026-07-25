@@ -3,7 +3,7 @@ use ratatui::widgets::*;
 
 use crate::app::App;
 use crate::theme;
-use devcore_challenges::Difficulty;
+use devcore_challenges::{Difficulty, ProjectProgress};
 
 pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
@@ -51,6 +51,10 @@ fn difficulty_str_color(diff: &str) -> Color {
 
 fn is_pack_installed(app: &App, pack_id: &str) -> bool {
     app.installed_pack_ids.iter().any(|id| id == pack_id)
+}
+
+fn get_project_progress<'a>(app: &'a App, project_id: &str) -> Option<&'a ProjectProgress> {
+    app.project_progress.iter().find(|p| p.project_id == project_id)
 }
 
 fn render_packs_panel(frame: &mut Frame, area: Rect, app: &App) {
@@ -205,7 +209,7 @@ fn render_offline_problems(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
     let block = Block::default()
-        .title(format!(" Projects ({}) [o] toggle back ", app.projects.len()))
+        .title(format!(" Projects ({}) [o] toggle back [c] complete stage ", app.projects.len()))
         .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
         .border_type(BorderType::Rounded)
         .borders(Borders::ALL)
@@ -227,7 +231,7 @@ fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
         Cell::from(Span::styled("Difficulty", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Project Name", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Language", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
-        Cell::from(Span::styled("Stages", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
+        Cell::from(Span::styled("Progress", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
     ]).style(Style::default().bg(theme::BASE));
 
     let rows: Vec<Row> = app.projects.iter().enumerate().map(|(i, project)| {
@@ -237,6 +241,25 @@ fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
             Style::default().bg(theme::OVERLAY)
         } else {
             Style::default()
+        };
+
+        let progress_text = if let Some(prog) = get_project_progress(app, &project.id) {
+            if prog.is_complete() {
+                Span::styled(
+                    format!("{}/{} ✓", prog.completed_stages.len(), project.stages.len()),
+                    Style::default().fg(theme::GREEN).add_modifier(Modifier::BOLD),
+                )
+            } else {
+                Span::styled(
+                    format!("{}/{}", prog.completed_stages.len(), project.stages.len()),
+                    Style::default().fg(theme::YELLOW),
+                )
+            }
+        } else {
+            Span::styled(
+                format!("0/{}", project.stages.len()),
+                Style::default().fg(theme::SUBTEXT),
+            )
         };
 
         Row::new(vec![
@@ -252,14 +275,11 @@ fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
                 project.language.clone(),
                 Style::default().fg(theme::MAUVE),
             )),
-            Cell::from(Span::styled(
-                format!("{}", project.stages.len()),
-                Style::default().fg(theme::SUBTEXT),
-            )),
+            Cell::from(progress_text),
         ]).style(base_style)
     }).collect();
 
     frame.render_widget(Table::new(rows, [
-        Constraint::Length(10), Constraint::Min(20), Constraint::Length(10), Constraint::Length(8),
+        Constraint::Length(10), Constraint::Min(20), Constraint::Length(10), Constraint::Length(10),
     ]).header(header).block(block).column_spacing(1), area);
 }
