@@ -77,19 +77,7 @@ pub fn run(cmd: GitCmd, project_root: &Path) -> Result<()> {
             }
         }
         GitAction::Xp { axis, amount, reason } => {
-            let skill_axis = match axis.as_str() {
-                "commit_hygiene" => SkillAxis::CommitHygiene,
-                "testing" => SkillAxis::Testing,
-                "documentation" => SkillAxis::Documentation,
-                "code_review" => SkillAxis::CodeReview,
-                "architecture" => SkillAxis::Architecture,
-                _ => {
-                    anyhow::bail!(
-                        "Unknown axis '{}'. Valid: commit_hygiene, testing, documentation, code_review, architecture",
-                        axis
-                    );
-                }
-            };
+            let skill_axis: SkillAxis = axis.parse().map_err(|e: String| anyhow::anyhow!(e))?;
             let store = Store::open(project_root)?;
             let conn = store.conn()?;
             init_skill_schema(&conn)?;

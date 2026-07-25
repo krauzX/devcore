@@ -79,7 +79,7 @@ pub struct OfflineProblem {
     pub fid: u32,
     pub title: String,
     pub slug: String,
-    pub difficulty: String,
+    pub difficulty: Difficulty,
     pub acceptance: f64,
     pub is_premium: bool,
 }
@@ -231,7 +231,7 @@ impl ChallengeEngine {
             .into_iter()
             .filter(|p| {
                 if let Some(diff) = difficulty {
-                    p.difficulty.to_lowercase() == diff.to_lowercase()
+                    p.difficulty.to_string().to_lowercase() == diff.to_lowercase()
                 } else {
                     true
                 }
@@ -268,12 +268,9 @@ impl ChallengeEngine {
                 None => continue,
             };
             let diff = pair.difficulty.as_ref().and_then(|d| d.level);
-            let difficulty = match diff {
-                Some(1) => "Easy".to_string(),
-                Some(2) => "Medium".to_string(),
-                Some(3) => "Hard".to_string(),
-                _ => "Unknown".to_string(),
-            };
+            let difficulty = diff
+                .and_then(Difficulty::from_level)
+                .unwrap_or(Difficulty::Easy);
             let submitted = stat.total_submitted.unwrap_or(0);
             let acs = stat.total_acs.unwrap_or(0);
             let acceptance = if submitted > 0 {
@@ -304,7 +301,7 @@ impl ChallengeEngine {
             .into_iter()
             .filter(|p| {
                 if let Some(diff) = difficulty {
-                    p.difficulty.to_lowercase() == diff.to_lowercase()
+                    p.difficulty.to_string().to_lowercase() == diff.to_lowercase()
                 } else {
                     true
                 }

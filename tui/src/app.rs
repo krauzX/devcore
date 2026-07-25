@@ -15,6 +15,7 @@ use crate::challenges_tab::render_challenges_tab;
 use crate::dashboard::render_dashboard;
 use crate::git_tab::render_git_tab;
 use crate::theme;
+use crate::widgets;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
@@ -259,17 +260,14 @@ impl App {
             Tab::Challenges => render_challenges_tab(frame, chunks[1], self),
         }
 
-        let status_bar = Line::from(vec![
-            Span::styled(" 1-4 ", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD)),
-            Span::styled("Tab ", Style::default().fg(theme::SUBTEXT)),
-            Span::styled("│", Style::default().fg(theme::OVERLAY)),
-            Span::styled(" q ", Style::default().fg(theme::RED).add_modifier(Modifier::BOLD)),
-            Span::styled("Quit ", Style::default().fg(theme::SUBTEXT)),
-            Span::styled("│", Style::default().fg(theme::OVERLAY)),
-            Span::styled(" Tab ", Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD)),
-            Span::styled("Next ", Style::default().fg(theme::SUBTEXT)),
-        ])
-        .style(Style::default().bg(theme::SURFACE));
-        frame.render_widget(status_bar, chunks[2]);
+        widgets::status_bar(
+            frame,
+            chunks[2],
+            &[
+                widgets::KeyBinding { key: "1-4", label: "Tab", color: theme::MAUVE },
+                widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                widgets::KeyBinding { key: "Tab", label: "Next", color: theme::BLUE },
+            ],
+        );
     }
 }

@@ -1,6 +1,56 @@
 use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UrgencyLevel {
+    Overdue,
+    Critical,
+    Warning,
+    Soon,
+    Normal,
+}
+
+impl UrgencyLevel {
+    pub fn from_days_left(days_left: i64) -> Self {
+        if days_left <= 0 {
+            Self::Overdue
+        } else if days_left <= 1 {
+            Self::Critical
+        } else if days_left <= 3 {
+            Self::Warning
+        } else if days_left <= 7 {
+            Self::Soon
+        } else {
+            Self::Normal
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Overdue => "OVERDUE",
+            Self::Critical => "!!!",
+            Self::Warning => "!!",
+            Self::Soon => "!",
+            Self::Normal => "",
+        }
+    }
+
+    pub fn ansi_color(&self) -> &'static str {
+        match self {
+            Self::Overdue | Self::Critical => "\x1b[31m",
+            Self::Warning => "\x1b[33m",
+            Self::Soon => "\x1b[36m",
+            Self::Normal => "\x1b[32m",
+        }
+    }
+}
+
+impl std::fmt::Display for UrgencyLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.label())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Deadline {
     pub id: String,
@@ -85,16 +135,6 @@ impl Deadline {
     }
 
     pub fn urgency_label(days_left: i64) -> &'static str {
-        if days_left <= 0 {
-            "OVERDUE"
-        } else if days_left <= 1 {
-            "!!!"
-        } else if days_left <= 3 {
-            "!!"
-        } else if days_left <= 7 {
-            "!"
-        } else {
-            ""
-        }
+        UrgencyLevel::from_days_left(days_left).label()
     }
 }

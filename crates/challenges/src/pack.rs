@@ -1,11 +1,36 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Difficulty {
     Easy,
     Medium,
     Hard,
+}
+
+impl Difficulty {
+    pub fn from_level(level: u32) -> Option<Self> {
+        match level {
+            1 => Some(Self::Easy),
+            2 => Some(Self::Medium),
+            3 => Some(Self::Hard),
+            _ => None,
+        }
+    }
+}
+
+impl FromStr for Difficulty {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "easy" => Ok(Self::Easy),
+            "medium" => Ok(Self::Medium),
+            "hard" => Ok(Self::Hard),
+            _ => Err(format!("invalid difficulty '{}'. Valid: easy, medium, hard", s)),
+        }
+    }
 }
 
 impl fmt::Display for Difficulty {

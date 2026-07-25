@@ -207,17 +207,7 @@ pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
             }
         }
         DsaAction::ByDifficulty { level } => {
-            let difficulty = match level.to_lowercase().as_str() {
-                "easy" => Difficulty::Easy,
-                "medium" => Difficulty::Medium,
-                "hard" => Difficulty::Hard,
-                _ => {
-                    anyhow::bail!(
-                        "Invalid difficulty '{}'. Valid: easy, medium, hard",
-                        level
-                    );
-                }
-            };
+            let difficulty: Difficulty = level.parse().map_err(|e: String| anyhow::anyhow!(e))?;
             let problems = engine.problems_by_difficulty(difficulty);
             if problems.is_empty() {
                 println!("No {} problems found.", difficulty);

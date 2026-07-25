@@ -1,5 +1,6 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -39,6 +40,24 @@ impl SkillAxis {
             Self::CodeReview,
             Self::Architecture,
         ]
+    }
+}
+
+impl FromStr for SkillAxis {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "commit_hygiene" => Ok(Self::CommitHygiene),
+            "testing" => Ok(Self::Testing),
+            "documentation" => Ok(Self::Documentation),
+            "code_review" => Ok(Self::CodeReview),
+            "architecture" => Ok(Self::Architecture),
+            _ => Err(format!(
+                "unknown skill axis '{}'. Valid: commit_hygiene, testing, documentation, code_review, architecture",
+                s
+            )),
+        }
     }
 }
 
@@ -92,13 +111,9 @@ pub fn get_progress(conn: &Connection) -> Result<Vec<SkillProgress>, ProgressErr
     let mut skill_entries = Vec::new();
     for row in rows {
         let (axis_str, xp) = row?;
-        let axis = match axis_str.as_str() {
-            "commit_hygiene" => SkillAxis::CommitHygiene,
-            "testing" => SkillAxis::Testing,
-            "documentation" => SkillAxis::Documentation,
-            "code_review" => SkillAxis::CodeReview,
-            "architecture" => SkillAxis::Architecture,
-            _ => continue,
+        let axis = match axis_str.parse::<SkillAxis>() {
+            Ok(axis) => axis,
+            Err(_) => continue,
         };
         skill_entries.push(SkillProgress::from_xp(axis, xp));
     }

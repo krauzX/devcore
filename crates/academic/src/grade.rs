@@ -21,26 +21,25 @@ pub fn grade_to_points(grade: &str) -> f64 {
     }
 }
 
+const GRADE_THRESHOLDS: &[(f64, &str)] = &[
+    (90.0, "O"),
+    (80.0, "A+"),
+    (70.0, "A"),
+    (60.0, "B+"),
+    (50.0, "B"),
+    (40.0, "C"),
+];
+
 pub fn score_to_grade(obtained: f64, total: f64) -> &'static str {
     if total <= 0.0 {
         return "F";
     }
     let pct = (obtained / total) * 100.0;
-    if pct >= 90.0 {
-        "O"
-    } else if pct >= 80.0 {
-        "A+"
-    } else if pct >= 70.0 {
-        "A"
-    } else if pct >= 60.0 {
-        "B+"
-    } else if pct >= 50.0 {
-        "B"
-    } else if pct >= 40.0 {
-        "C"
-    } else {
-        "F"
-    }
+    GRADE_THRESHOLDS
+        .iter()
+        .find(|&&(threshold, _)| pct >= threshold)
+        .map(|&(_, grade)| grade)
+        .unwrap_or("F")
 }
 
 impl GradeEntry {

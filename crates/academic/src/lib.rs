@@ -4,6 +4,6 @@ pub mod grade;
 pub mod semester;
 
 pub use course::Course;
-pub use deadline::Deadline;
+pub use deadline::{Deadline, UrgencyLevel};
 pub use grade::{grade_to_points, score_to_grade, GradeEntry};
 pub use semester::{Semester, SemesterStore};
