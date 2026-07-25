@@ -72,6 +72,9 @@ pub enum ProjectAction {
         project_id: String,
         stage: usize,
     },
+    View {
+        project_id: String,
+    },
 }
 
 #[derive(Parser)]
@@ -456,6 +459,79 @@ fn run_project(cmd: ProjectCmd, project_root: &Path) -> Result<()> {
                 } else {
                     println!("Stage {} not found in project '{}' (total: {} stages).", stage, project_id, p.stages.len());
                 }
+            } else {
+                println!("Project '{}' not found.", project_id);
+            }
+        }
+        ProjectAction::View { project_id } => {
+            if let Some(p) = engine.get_project(&project_id) {
+                println!("{}", p.name);
+                println!("{}", "=".repeat(p.name.len()));
+                println!();
+                println!("{}", p.description);
+                println!();
+                println!("Language: {}", p.language);
+                println!("Difficulty: {}", p.difficulty);
+                println!("Stages: {}", p.stages.len());
+
+                let progress = engine.get_progress(&project_id);
+                if let Some(ref prog) = progress {
+                    println!("Progress: {}/{} ({:.0}%)", prog.completed_stages.len(), p.stages.len(), prog.percentage());
+                    if prog.is_complete() {
+                        println!("Status: Complete");
+                    } else {
+                        println!("Status: In Progress (current stage: {})", prog.current_stage + 1);
+                    }
+                }
+
+                println!();
+                for (i, stage) in p.stages.iter().enumerate() {
+                    let marker = progress.as_ref().map(|prog| {
+                        if prog.completed_stages.contains(&i) {
+                            "[x]"
+                        } else if i == prog.current_stage {
+                            "[>]"
+                        } else {
+                            "[ ]"
+                        }
+                    }).unwrap_or("[ ]");
+
+                    println!();
+                    println!("Stage {}: {} {}", i + 1, marker, stage.name);
+                    println!("{}", "-".repeat(60));
+                    println!("{}", stage.description);
+                    println!();
+
+                    if !stage.files.is_empty() {
+                        println!("Skeleton Files:");
+                        for file in &stage.files {
+                            println!("--- {} ---", file.path);
+                            println!("{}", file.content);
+                            println!();
+                        }
+                    }
+
+                    if !stage.tests.is_empty() {
+                        println!("Tests:");
+                        for file in &stage.tests {
+                            println!("--- {} ---", file.path);
+                            println!("{}", file.content);
+                            println!();
+                        }
+                    }
+
+                    if !stage.solution_files.is_empty() {
+                        println!("Solution Files (available in .solutions/):");
+                        for file in &stage.solution_files {
+                            println!("  {}", file.path);
+                        }
+                        println!();
+                    }
+                }
+
+                println!();
+                println!("Readme:");
+                println!("{}", p.readme);
             } else {
                 println!("Project '{}' not found.", project_id);
             }

@@ -15,6 +15,7 @@ use ratatui::widgets::*;
 
 use crate::academic_tab::render_academic_tab;
 use crate::challenges_tab::render_challenges_tab;
+use crate::course_view::render_course_view;
 use crate::dashboard::render_dashboard;
 use crate::git_tab::render_git_tab;
 use crate::theme;
@@ -67,7 +68,7 @@ pub(crate) enum InputMode {
     ConfirmingInstall,
     ConfirmingRemove,
     ViewingDetail,
-    ViewingProjectDetail,
+    ViewingCourse,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,6 +126,8 @@ pub struct App {
     pub(crate) selected_project: Option<usize>,
     pub(crate) installed_pack_ids: Vec<String>,
     pub(crate) project_progress: Vec<ProjectProgress>,
+    pub(crate) course_stage_cursor: usize,
+    pub(crate) show_solutions: bool,
 }
 
 impl App {
@@ -233,6 +236,8 @@ impl App {
             selected_project: None,
             installed_pack_ids,
             project_progress,
+            course_stage_cursor: 0,
+            show_solutions: false,
         })
     }
 
@@ -315,9 +320,79 @@ impl App {
                             InputMode::ConfirmingInstall => self.handle_confirm_install(key.code),
                             InputMode::ConfirmingRemove => self.handle_confirm_remove(key.code),
                             InputMode::ViewingDetail => self.handle_viewing_detail(key.code),
-                            InputMode::ViewingProjectDetail => {
-                                if matches!(key.code, KeyCode::Esc | KeyCode::Enter) {
-                                    self.input_mode = InputMode::Normal;
+                            InputMode::ViewingCourse => {
+                                match key.code {
+                                    KeyCode::Esc => {
+                                        self.input_mode = InputMode::Normal;
+                                    }
+                                    KeyCode::Up | KeyCode::Char('k') => {
+                                        if self.course_stage_cursor > 0 {
+                                            self.course_stage_cursor -= 1;
+                                        }
+                                    }
+                                    KeyCode::Down | KeyCode::Char('j') => {
+                                        if let Some(idx) = self.selected_project {
+                                            if idx < self.projects.len() {
+                                                let max = self.projects[idx].stages.len().saturating_sub(1);
+                                                if self.course_stage_cursor < max {
+                                                    self.course_stage_cursor += 1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    KeyCode::Char('s') => {
+                                        self.show_solutions = !self.show_solutions;
+                                    }
+                                    KeyCode::Char('c') => {
+                                        if let Some(idx) = self.selected_project {
+                                            if idx < self.projects.len() {
+                                                let project_id = self.projects[idx].id.clone();
+                                                let data_dir = self.project_root.join(".devcore");
+                                                let mut engine = ProjectEngine::new(&data_dir);
+                                                let stage = self.course_stage_cursor;
+                                                match engine.get_progress(&project_id) {
+                                                    Some(prog) if !prog.is_complete() => {
+                                                        match engine.set_stage_completed(&project_id, stage) {
+                                                            Ok(()) => {
+                                                                self.status_msg = Some(format!(
+                                                                    "Marked stage {} as complete",
+                                                                    stage + 1
+                                                                ));
+                                                                self.refresh_project_progress();
+                                                            }
+                                                            Err(e) => {
+                                                                self.status_msg = Some(format!("Failed: {}", e));
+                                                            }
+                                                        }
+                                                    }
+                                                    None => {
+                                                        let total = self.projects[idx].stages.len();
+                                                        let mut progress = ProjectProgress::new(&project_id, total);
+                                                        progress.completed_stages.push(stage);
+                                                        if stage + 1 < total {
+                                                            progress.current_stage = stage + 1;
+                                                        }
+                                                        match engine.save_progress(&progress) {
+                                                            Ok(()) => {
+                                                                self.status_msg = Some(format!(
+                                                                    "Started project and marked stage {} complete",
+                                                                    stage + 1
+                                                                ));
+                                                                self.refresh_project_progress();
+                                                            }
+                                                            Err(e) => {
+                                                                self.status_msg = Some(format!("Failed: {}", e));
+                                                            }
+                                                        }
+                                                    }
+                                                    Some(_) => {
+                                                        self.status_msg = Some("Project already complete!".into());
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
@@ -782,9 +857,18 @@ impl App {
             }
             KeyCode::Enter => {
                 if self.show_projects && self.selected_project.is_some() {
-                    self.input_mode = InputMode::ViewingProjectDetail;
+                    self.course_stage_cursor = 0;
+                    self.show_solutions = false;
+                    self.input_mode = InputMode::ViewingCourse;
                 } else if self.selected_problem.is_some() {
                     self.input_mode = InputMode::ViewingDetail;
+                }
+            }
+            KeyCode::Char('v') if self.show_projects => {
+                if self.selected_project.is_some() {
+                    self.course_stage_cursor = 0;
+                    self.show_solutions = false;
+                    self.input_mode = InputMode::ViewingCourse;
                 }
             }
             KeyCode::Char('e') => {
@@ -1053,7 +1137,8 @@ impl App {
                 Tab::Challenges => vec![
                     widgets::KeyBinding { key: "i", label: "Install", color: theme::GREEN },
                     widgets::KeyBinding { key: "r", label: "Remove", color: theme::RED },
-                    widgets::KeyBinding { key: "Enter", label: "Detail", color: theme::BLUE },
+                    widgets::KeyBinding { key: "Enter", label: "View Course", color: theme::BLUE },
+                    widgets::KeyBinding { key: "v", label: "Full View", color: theme::TEAL },
                     widgets::KeyBinding { key: "e/m/h/a", label: "Filter", color: theme::YELLOW },
                     widgets::KeyBinding { key: "o", label: "Projects", color: theme::MAUVE },
                     widgets::KeyBinding { key: "c", label: "Complete Stage", color: theme::GREEN },
@@ -1061,6 +1146,12 @@ impl App {
                     widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
                 ],
             },
+            InputMode::ViewingCourse => vec![
+                widgets::KeyBinding { key: "↑↓", label: "Stages", color: theme::BLUE },
+                widgets::KeyBinding { key: "s", label: "Solution", color: theme::GREEN },
+                widgets::KeyBinding { key: "c", label: "Complete", color: theme::TEAL },
+                widgets::KeyBinding { key: "Esc", label: "Back", color: theme::RED },
+            ],
             _ => vec![
                 widgets::KeyBinding { key: "Tab", label: "Field", color: theme::BLUE },
                 widgets::KeyBinding { key: "Enter", label: "Submit", color: theme::GREEN },
@@ -1107,12 +1198,13 @@ impl App {
                     }
                 }
             }
-            InputMode::ViewingProjectDetail => {
+            InputMode::ViewingCourse => {
                 if let Some(idx) = self.selected_project {
                     if idx < self.projects.len() {
                         let project = &self.projects[idx];
                         let progress = self.project_progress.iter().find(|p| p.project_id == project.id);
-                        widgets::render_project_detail(frame, area, project, progress);
+                        let cursor = self.course_stage_cursor.min(project.stages.len().saturating_sub(1));
+                        render_course_view(frame, area, project, progress, cursor, self.show_solutions);
                     }
                 }
             }

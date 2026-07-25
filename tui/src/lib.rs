@@ -1,6 +1,7 @@
 mod app;
 mod academic_tab;
 mod challenges_tab;
+mod course_view;
 mod dashboard;
 mod git_tab;
 pub mod theme;
