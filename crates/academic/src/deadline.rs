@@ -69,10 +69,10 @@ impl Deadline {
         let mut stmt = conn.prepare(
             "SELECT id, semester_id, title, description, due_date, completed \
              FROM deadlines \
-             WHERE completed = 0 AND due_date BETWEEN ?1 AND ?2 \
+             WHERE completed = 0 AND due_date <= ?1 \
              ORDER BY due_date",
         )?;
-        let rows = stmt.query_map(params![today.to_string(), cutoff.to_string()], |row| {
+        let rows = stmt.query_map(params![cutoff.to_string()], |row| {
             Ok(Deadline {
                 id: row.get(0)?,
                 semester_id: row.get(1)?,

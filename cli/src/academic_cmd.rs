@@ -6,6 +6,8 @@ use clap::{Parser, Subcommand};
 use devcore_academic::{Course, Deadline, GradeEntry, Semester, SemesterStore, UrgencyLevel, score_to_grade};
 use uuid::Uuid;
 
+const ANSI_RESET: &str = "\x1b[0m";
+
 #[derive(Parser)]
 pub struct AcademicCmd {
     #[command(subcommand)]
@@ -189,7 +191,6 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
 
 fn run_dashboard(project_root: &Path) -> Result<()> {
     let store = SemesterStore::open(project_root)?;
-    let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
 
     println!("========================================");
     println!("          ACADEMIC DASHBOARD");
@@ -201,11 +202,19 @@ fn run_dashboard(project_root: &Path) -> Result<()> {
             println!("  Semester : {} ({})", sem.name, sem.id);
             println!("  Period   : {} to {}", sem.start_date, sem.end_date);
 
-            let course_count = Course::count_for_semester(&conn, &sem.id);
-            let total_credits = Course::total_credits_for_semester(&conn, &sem.id);
+            let (course_count, total_credits) = {
+                let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
+                let count = Course::count_for_semester(&conn, &sem.id);
+                let credits = Course::total_credits_for_semester(&conn, &sem.id);
+                (count, credits)
+            };
             println!("  Courses  : {} ({} total credits)", course_count, total_credits);
 
-            match GradeEntry::compute_sgpa(&conn, &sem.id) {
+            let sgpa = {
+                let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
+                GradeEntry::compute_sgpa(&conn, &sem.id)
+            };
+            match sgpa {
                 Some(sgpa) => {
                     let bar_len: usize = 20;
                     let filled = ((sgpa / 10.0) * bar_len as f64) as usize;
@@ -220,7 +229,10 @@ fn run_dashboard(project_root: &Path) -> Result<()> {
                 None => println!("  SGPA     : -- (no grades yet)"),
             }
 
-            let deadlines = Deadline::upcoming(&conn, 30).unwrap_or_default();
+            let deadlines = {
+                let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
+                Deadline::upcoming(&conn, 30).unwrap_or_default()
+            };
             if let Some(next) = deadlines.first() {
                 let days_left = Deadline::days_until(next.due_date);
                 let priority = Deadline::urgency_label(days_left);
@@ -246,7 +258,11 @@ fn run_dashboard(project_root: &Path) -> Result<()> {
         }
     }
 
-    match GradeEntry::compute_cgpa(&conn) {
+    let cgpa = {
+        let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
+        GradeEntry::compute_cgpa(&conn)
+    };
+    match cgpa {
         Some(cgpa) => {
             println!("  Overall CGPA: {:.2}", cgpa);
         }
@@ -280,7 +296,6 @@ fn run_deadlines(project_root: &Path, days: i64) -> Result<()> {
 
         let urgency = UrgencyLevel::from_days_left(days_left);
         let urgency_str = urgency.ansi_color();
-        let reset = "\x1b[0m";
 
         let label = if priority.is_empty() {
             "     ".to_string()
@@ -290,7 +305,7 @@ fn run_deadlines(project_root: &Path, days: i64) -> Result<()> {
 
         println!(
             "{}{}{} {}  due {} ({}d)",
-            urgency_str, label, reset, d.title, d.due_date, days_left
+            urgency_str, label, ANSI_RESET, d.title, d.due_date, days_left
         );
     }
 
@@ -312,7 +327,7 @@ fn run_grade(
         .ok_or_else(|| anyhow::anyhow!("No current semester set. Use 'set' first."))?;
     let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
 
-    let course = Course::find_by_code(&conn, course_code)?
+    let course = Course::find_by_code(&conn, course_code, &current.id)?
         .ok_or_else(|| anyhow::anyhow!("Course '{}' not found", course_code))?;
 
     if total <= 0.0 {

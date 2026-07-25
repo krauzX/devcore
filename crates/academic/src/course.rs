@@ -30,7 +30,7 @@ impl Course {
 
     pub fn add(conn: &Connection, course: &Course) -> Result<(), rusqlite::Error> {
         conn.execute(
-            "INSERT INTO courses (id, semester_id, name, code, credits) VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT OR IGNORE INTO courses (id, semester_id, name, code, credits) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 course.id,
                 course.semester_id,
@@ -58,11 +58,11 @@ impl Course {
         Ok(rows.next().transpose()?)
     }
 
-    pub fn find_by_code(conn: &Connection, code: &str) -> Result<Option<Course>, DevCoreError> {
+    pub fn find_by_code(conn: &Connection, code: &str, semester_id: &str) -> Result<Option<Course>, DevCoreError> {
         let mut stmt = conn
-            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE code = ?1")?;
+            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE code = ?1 AND semester_id = ?2")?;
         let mut rows = stmt
-            .query_map(params![code], |row| {
+            .query_map(params![code, semester_id], |row| {
                 Ok(Course {
                     id: row.get(0)?,
                     semester_id: row.get(1)?,

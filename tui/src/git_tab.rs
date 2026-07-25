@@ -41,10 +41,11 @@ fn render_streak_panel(frame: &mut Frame, area: Rect, app: &App) {
         frame.render_widget(widgets::stat_row("Longest Streak: ", &format!("{} days", s.longest), theme::YELLOW), c[1]);
         frame.render_widget(widgets::stat_row("Total Days:     ", &s.total_days.to_string(), theme::TEAL), c[2]);
         let last = s.last_commit_date.map(|d| d.to_string()).unwrap_or_else(|| "none".to_string());
-        frame.render_widget(widgets::stat_row("Last Commit:    ", &last, theme::OVERLAY), c[3]);
+        let last_color = if s.last_commit_date.is_some() { theme::SUBTEXT } else { theme::OVERLAY };
+        frame.render_widget(widgets::stat_row("Last Commit:    ", &last, last_color), c[3]);
     } else {
         frame.render_widget(
-            Paragraph::new("No git repo detected").style(Style::default().fg(theme::OVERLAY)).alignment(Alignment::Center),
+            Paragraph::new("No git repo detected").style(Style::default().fg(theme::SUBTEXT)).alignment(Alignment::Center),
             inner);
     }
 }
@@ -107,7 +108,7 @@ fn render_repo_analysis(frame: &mut Frame, area: Rect, app: &App) {
     } else {
         frame.render_widget(
             Paragraph::new("No repo detected")
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center),
             inner,
         );

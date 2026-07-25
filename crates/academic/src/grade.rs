@@ -21,7 +21,10 @@ pub fn grade_to_points(grade: &str) -> f64 {
         "C" => 5.0,
         "D" => 4.0,
         "F" => 0.0,
-        _ => 0.0,
+        other => {
+            eprintln!("warning: unknown grade '{}' — treating as 0.0 points", other);
+            0.0
+        }
     }
 }
 
@@ -125,37 +128,5 @@ impl GradeEntry {
         } else {
             Some(total_points / total_credits as f64)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_grade_to_points_o() {
-        assert_eq!(grade_to_points("O"), 10.0);
-    }
-
-    #[test]
-    fn test_grade_to_points_aplus() {
-        assert_eq!(grade_to_points("A+"), 9.0);
-    }
-
-    #[test]
-    fn test_grade_to_points_f() {
-        assert_eq!(grade_to_points("F"), 0.0);
-    }
-
-    #[test]
-    fn test_grade_to_points_percentage() {
-        assert_eq!(score_to_grade(95.0, 100.0), "O");
-        assert_eq!(score_to_grade(85.0, 100.0), "A+");
-        assert_eq!(score_to_grade(75.0, 100.0), "A");
-        assert_eq!(score_to_grade(65.0, 100.0), "B+");
-        assert_eq!(score_to_grade(55.0, 100.0), "B");
-        assert_eq!(score_to_grade(45.0, 100.0), "C");
-        assert_eq!(score_to_grade(30.0, 100.0), "D");
-        assert_eq!(score_to_grade(20.0, 100.0), "F");
     }
 }

@@ -61,6 +61,7 @@ pub struct TopicTag {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CodeSnippet {
     pub lang_slug: String,
     pub code: String,
@@ -170,6 +171,7 @@ struct ProblemListVariables {
 
 #[derive(Serialize)]
 struct ProblemListFilters {
+    #[serde(skip_serializing_if = "Option::is_none")]
     difficulty: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     tags: Option<Vec<String>>,

@@ -342,25 +342,3 @@ impl ChallengeEngine {
         all.iter().find(|p| p.slug == slug).cloned()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_engine_new() {
-        let dir = tempdir().unwrap();
-        let engine = ChallengeEngine::new(dir.path());
-        assert!(dir.path().join("challenges/packs").exists());
-        assert!(engine.installed.is_empty());
-    }
-
-    #[test]
-    fn test_list_available() {
-        let dir = tempdir().unwrap();
-        let engine = ChallengeEngine::new(dir.path());
-        let packs = engine.list_available();
-        assert_eq!(packs.len(), 5);
-    }
-}

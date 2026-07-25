@@ -105,7 +105,7 @@ fn render_semester_panel(frame: &mut Frame, area: Rect, app: &App) {
     if app.semesters.is_empty() {
         frame.render_widget(
             Paragraph::new("No semesters yet. Press 's' to select one.")
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center)
                 .block(block),
             area,
@@ -155,7 +155,7 @@ fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
     if app.upcoming_deadlines.is_empty() {
         frame.render_widget(
             Paragraph::new(format!("No upcoming deadlines in the next {} days", app.deadline_days))
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center)
                 .block(block),
             area,
@@ -176,7 +176,7 @@ fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
                 let color = widgets::urgency_color(urgency);
                 ListItem::new(Line::from(vec![
                     Span::styled(
-                        format!("▸ {} ({}d) ", d.title, days),
+                        format!("> {} ({}d) ", d.title, days),
                         Style::default()
                             .fg(color)
                             .add_modifier(Modifier::BOLD | Modifier::REVERSED),

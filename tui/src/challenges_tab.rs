@@ -9,9 +9,8 @@ pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage(35),
-            Constraint::Percentage(35),
-            Constraint::Min(10),
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
         ])
         .spacing(1)
         .split(area);
@@ -30,7 +29,7 @@ pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
         render_problems_panel(frame, top_chunks[1], app);
     }
 
-    render_offline_problems(frame, chunks[2], app);
+    render_offline_problems(frame, chunks[1], app);
 }
 
 fn difficulty_color(diff: &Difficulty) -> Color {
@@ -66,7 +65,7 @@ fn render_packs_panel(frame: &mut Frame, area: Rect, app: &App) {
     if app.packs.is_empty() {
         frame.render_widget(
             ratatui::widgets::Paragraph::new("No packs available")
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center)
                 .block(block),
             area,
@@ -107,30 +106,46 @@ fn render_packs_panel(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_problems_panel(frame: &mut Frame, area: Rect, app: &App) {
+    let block = Block::default().title(" All Problems [Enter] detail ")
+        .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+        .border_type(BorderType::Rounded).borders(Borders::ALL)
+        .border_style(Style::default().fg(theme::OVERLAY))
+        .style(Style::default().bg(theme::SURFACE));
+
+    let all = app.all_problems();
+    if all.is_empty() {
+        frame.render_widget(
+            ratatui::widgets::Paragraph::new("No problems available. Install a pack with 'i'.")
+                .style(Style::default().fg(theme::SUBTEXT))
+                .alignment(Alignment::Center)
+                .block(block),
+            area,
+        );
+        return;
+    }
+
     let header = Row::new(vec![
         Cell::from(Span::styled("Difficulty", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Problem Name", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Hints", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
     ]).style(Style::default().bg(theme::BASE));
-    let rows: Vec<Row> = app.packs.iter().flat_map(|pack| {
-        pack.problems.iter().map(move |problem| {
-            let color = difficulty_color(&problem.difficulty);
-            Row::new(vec![
-                Cell::from(Span::styled(format!("[{}]", problem.difficulty), Style::default().fg(color))),
-                Cell::from(Span::styled(problem.name.clone(), Style::default().fg(theme::TEXT))),
-                Cell::from(Span::styled(format!("{}", problem.hints.len()), Style::default().fg(theme::SUBTEXT))),
-            ])
-        })
+    let rows: Vec<Row> = all.iter().enumerate().map(|(i, (_pack, problem))| {
+        let color = difficulty_color(&problem.difficulty);
+        let is_selected = app.selected_problem == Some(i);
+        let base_style = if is_selected {
+            Style::default().bg(theme::OVERLAY)
+        } else {
+            Style::default()
+        };
+        Row::new(vec![
+            Cell::from(Span::styled(format!("[{}]", problem.difficulty), Style::default().fg(color))),
+            Cell::from(Span::styled(problem.name.clone(), Style::default().fg(theme::TEXT))),
+            Cell::from(Span::styled(format!("{}", problem.hints.len()), Style::default().fg(theme::SUBTEXT))),
+        ]).style(base_style)
     }).collect();
     frame.render_widget(Table::new(rows, [
         Constraint::Length(10), Constraint::Min(20), Constraint::Length(8),
-    ]).header(header).block(
-        Block::default().title(" All Problems [Enter] detail ")
-            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
-            .border_type(BorderType::Rounded).borders(Borders::ALL)
-            .border_style(Style::default().fg(theme::OVERLAY))
-            .style(Style::default().bg(theme::SURFACE)),
-    ).column_spacing(1), area);
+    ]).header(header).block(block).column_spacing(1), area);
 }
 
 fn render_offline_problems(frame: &mut Frame, area: Rect, app: &App) {
@@ -158,7 +173,7 @@ fn render_offline_problems(frame: &mut Frame, area: Rect, app: &App) {
     if app.offline_problems.is_empty() {
         frame.render_widget(
             ratatui::widgets::Paragraph::new("No problems found")
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center)
                 .block(block),
             area,
@@ -200,7 +215,7 @@ fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
     if app.projects.is_empty() {
         frame.render_widget(
             ratatui::widgets::Paragraph::new("No projects available")
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center)
                 .block(block),
             area,

@@ -117,7 +117,7 @@ pub fn analyze_repo(path: &Path) -> Result<RepoAnalysis> {
             }
         } else {
             let tree = commit.tree()?;
-            collect_files_from_tree(&repo, &tree, &mut files_touched);
+            collect_files_from_tree(&repo, &tree, "", &mut files_touched);
         }
     }
 
@@ -135,17 +135,27 @@ pub fn analyze_repo(path: &Path) -> Result<RepoAnalysis> {
     })
 }
 
-fn collect_files_from_tree(repo: &Repository, tree: &git2::Tree, files: &mut HashSet<String>) {
+fn collect_files_from_tree(repo: &Repository, tree: &git2::Tree, prefix: &str, files: &mut HashSet<String>) {
     for entry in tree.iter() {
         if let Ok(name) = entry.name() {
             match entry.kind() {
                 Some(git2::ObjectType::Tree) => {
                     if let Ok(subtree) = repo.find_tree(entry.id()) {
-                        collect_files_from_tree(repo, &subtree, files);
+                        let sub_prefix = if prefix.is_empty() {
+                            name.to_string()
+                        } else {
+                            format!("{}/{}", prefix, name)
+                        };
+                        collect_files_from_tree(repo, &subtree, &sub_prefix, files);
                     }
                 }
                 Some(git2::ObjectType::Blob) => {
-                    files.insert(name.to_string());
+                    let path = if prefix.is_empty() {
+                        name.to_string()
+                    } else {
+                        format!("{}/{}", prefix, name)
+                    };
+                    files.insert(path);
                 }
                 _ => {}
             }
@@ -179,15 +189,18 @@ pub fn detect_languages(path: &Path) -> Vec<LanguageStat> {
             .unwrap_or("");
 
         if let Some(lang) = ext_to_language(ext) {
+            let metadata = std::fs::metadata(file_path);
+            if let Ok(ref m) = metadata {
+                if m.len() > MAX_FILE_SIZE {
+                    continue;
+                }
+            } else {
+                continue;
+            }
             let entry = stats
                 .entry(lang.to_string())
                 .or_insert((0, 0));
             entry.0 += 1;
-            if let Ok(metadata) = std::fs::metadata(file_path) {
-                if metadata.len() > MAX_FILE_SIZE {
-                    continue;
-                }
-            }
             if let Ok(content) = std::fs::read_to_string(file_path) {
                 entry.1 += content.bytes().filter(|&b| b == b'\n').count();
             }

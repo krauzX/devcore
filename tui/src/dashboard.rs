@@ -103,7 +103,7 @@ fn render_deadline_list(frame: &mut Frame, area: Rect, app: &App) {
     if app.upcoming_deadlines.is_empty() {
         frame.render_widget(
             Paragraph::new("No upcoming deadlines")
-                .style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().fg(theme::SUBTEXT))
                 .alignment(Alignment::Center).block(block), area);
         return;
     }

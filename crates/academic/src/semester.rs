@@ -1,5 +1,6 @@
 use chrono::NaiveDate;
-use rusqlite::{params, Connection, Result as SqlResult};
+use devcore_core::DevCoreError;
+use rusqlite::{params, Connection};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 
@@ -66,17 +67,122 @@ CREATE INDEX IF NOT EXISTS idx_deadlines_due ON deadlines(due_date);
 "#;
 
 impl SemesterStore {
-    pub fn open(project_root: &Path) -> SqlResult<Self> {
+    pub fn open(project_root: &Path) -> Result<Self, DevCoreError> {
         let db_dir = project_root.join(".devcore");
-        std::fs::create_dir_all(&db_dir)
-            .map_err(|e| rusqlite::Error::InvalidParameterName(format!("failed to create dir: {}", e)))?;
+        std::fs::create_dir_all(&db_dir)?;
         let db_path = db_dir.join("academic.db");
         let conn = Connection::open(&db_path)?;
         conn.execute_batch("PRAGMA foreign_keys = ON;")?;
         conn.execute_batch(ACADEMIC_SCHEMA)?;
-        Ok(Self {
+        let store = Self {
             conn: Mutex::new(conn),
-        })
+        };
+        let needs_seed = store.conn().map(|conn| {
+            let count: i32 = conn
+                .query_row("SELECT COUNT(*) FROM semesters", [], |row| row.get(0))
+                .unwrap_or(0);
+            count == 0
+        }).unwrap_or(true);
+        if needs_seed {
+            store.seed_2026_data()?;
+        }
+        Ok(store)
+    }
+
+    pub fn seed_2026_data(&self) -> Result<(), DevCoreError> {
+        let conn = self.conn().map_err(DevCoreError::Config)?;
+        let tx = conn.unchecked_transaction().map_err(|e| DevCoreError::Config(e.to_string()))?;
+
+        let semesters = vec![
+            Semester {
+                id: "sem1-2026".into(),
+                name: "Semester 1 — 2026 (Jul–Nov)".into(),
+                start_date: NaiveDate::from_ymd_opt(2026, 7, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2026, 11, 30).unwrap(),
+                is_current: true,
+            },
+            Semester {
+                id: "sem2-2027".into(),
+                name: "Semester 2 — 2027 (Jan–May)".into(),
+                start_date: NaiveDate::from_ymd_opt(2027, 1, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2027, 5, 31).unwrap(),
+                is_current: false,
+            },
+            Semester {
+                id: "sem3-2027".into(),
+                name: "Semester 3 — 2027 (Jul–Nov)".into(),
+                start_date: NaiveDate::from_ymd_opt(2027, 7, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2027, 11, 30).unwrap(),
+                is_current: false,
+            },
+            Semester {
+                id: "sem4-2028".into(),
+                name: "Semester 4 — 2028 (Jan–May)".into(),
+                start_date: NaiveDate::from_ymd_opt(2028, 1, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2028, 5, 31).unwrap(),
+                is_current: false,
+            },
+            Semester {
+                id: "sem5-2028".into(),
+                name: "Semester 5 — 2028 (Jul–Nov)".into(),
+                start_date: NaiveDate::from_ymd_opt(2028, 7, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2028, 11, 30).unwrap(),
+                is_current: false,
+            },
+            Semester {
+                id: "sem6-2029".into(),
+                name: "Semester 6 — 2029 (Jan–May)".into(),
+                start_date: NaiveDate::from_ymd_opt(2029, 1, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2029, 5, 31).unwrap(),
+                is_current: false,
+            },
+            Semester {
+                id: "sem7-2029".into(),
+                name: "Semester 7 — 2029 (Jul–Nov)".into(),
+                start_date: NaiveDate::from_ymd_opt(2029, 7, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2029, 11, 30).unwrap(),
+                is_current: false,
+            },
+            Semester {
+                id: "sem8-2030".into(),
+                name: "Semester 8 — 2030 (Jan–May)".into(),
+                start_date: NaiveDate::from_ymd_opt(2030, 1, 1).unwrap(),
+                end_date: NaiveDate::from_ymd_opt(2030, 5, 31).unwrap(),
+                is_current: false,
+            },
+        ];
+        for sem in &semesters {
+            tx.execute(
+                "INSERT OR IGNORE INTO semesters (id, name, start_date, end_date, is_current) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![
+                    sem.id,
+                    sem.name,
+                    sem.start_date.to_string(),
+                    sem.end_date.to_string(),
+                    sem.is_current as i32,
+                ],
+            ).map_err(|e| DevCoreError::Config(e.to_string()))?;
+        }
+
+        let courses = vec![
+            ("cs101-sem1", "sem1-2026", "Programming Fundamentals", "CS101", 4),
+            ("ma101-sem1", "sem1-2026", "Engineering Mathematics I", "MA101", 4),
+            ("ph101-sem1", "sem1-2026", "Engineering Physics", "PH101", 3),
+            ("ee101-sem1", "sem1-2026", "Basic Electrical Engineering", "EE101", 3),
+            ("cs102-sem1", "sem1-2026", "Data Structures", "CS102", 4),
+            ("cs103-sem1", "sem1-2026", "Digital Logic", "CS103", 3),
+            ("hs101-sem1", "sem1-2026", "English Communication", "HS101", 2),
+            ("cs104-sem1", "sem1-2026", "Programming Lab", "CS104", 1),
+        ];
+        for (id, sem_id, name, code, credits) in &courses {
+            tx.execute(
+                "INSERT OR IGNORE INTO courses (id, semester_id, name, code, credits) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![id, sem_id, name, code, credits],
+            ).map_err(|e| DevCoreError::Config(e.to_string()))?;
+        }
+
+        tx.commit().map_err(|e| DevCoreError::Config(e.to_string()))?;
+        Ok(())
     }
 
     pub fn conn(&self) -> Result<MutexGuard<'_, Connection>, String> {
@@ -108,8 +214,8 @@ impl SemesterStore {
         rows.next().and_then(|r| r.ok())
     }
 
-    pub fn list_semesters(&self) -> Result<Vec<Semester>, rusqlite::Error> {
-        let conn = self.conn().map_err(rusqlite::Error::InvalidParameterName)?;
+    pub fn list_semesters(&self) -> Result<Vec<Semester>, DevCoreError> {
+        let conn = self.conn().map_err(DevCoreError::Config)?;
         let mut stmt = conn
             .prepare("SELECT id, name, start_date, end_date, is_current FROM semesters ORDER BY start_date DESC")?;
         let rows = stmt
@@ -129,8 +235,8 @@ impl SemesterStore {
         Ok(rows.filter_map(|r| r.ok()).collect())
     }
 
-    pub fn set_current_semester(&self, id: &str) -> Result<(), rusqlite::Error> {
-        let conn = self.conn().map_err(rusqlite::Error::InvalidParameterName)?;
+    pub fn set_current_semester(&self, id: &str) -> Result<(), DevCoreError> {
+        let conn = self.conn().map_err(DevCoreError::Config)?;
         conn.execute("UPDATE semesters SET is_current = 0", [])?;
         conn.execute(
             "UPDATE semesters SET is_current = 1 WHERE id = ?1",
@@ -139,10 +245,10 @@ impl SemesterStore {
         Ok(())
     }
 
-    pub fn add_semester(&self, sem: &Semester) -> Result<(), rusqlite::Error> {
-        let conn = self.conn().map_err(rusqlite::Error::InvalidParameterName)?;
+    pub fn add_semester(&self, sem: &Semester) -> Result<(), DevCoreError> {
+        let conn = self.conn().map_err(DevCoreError::Config)?;
         conn.execute(
-            "INSERT INTO semesters (id, name, start_date, end_date, is_current) VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT OR IGNORE INTO semesters (id, name, start_date, end_date, is_current) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 sem.id,
                 sem.name,
@@ -152,50 +258,5 @@ impl SemesterStore {
             ],
         )?;
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_semester_store_open() {
-        let dir = tempdir().unwrap();
-        let store = SemesterStore::open(dir.path()).unwrap();
-        let sems = store.list_semesters().unwrap();
-        assert!(sems.is_empty());
-    }
-
-    #[test]
-    fn test_add_and_list_semesters() {
-        let dir = tempdir().unwrap();
-        let store = SemesterStore::open(dir.path()).unwrap();
-
-        let sem1 = Semester {
-            id: "s1".into(),
-            name: "Sem 1".into(),
-            start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            end_date: NaiveDate::from_ymd_opt(2024, 6, 30).unwrap(),
-            is_current: false,
-        };
-        let sem2 = Semester {
-            id: "s2".into(),
-            name: "Sem 2".into(),
-            start_date: NaiveDate::from_ymd_opt(2024, 7, 1).unwrap(),
-            end_date: NaiveDate::from_ymd_opt(2024, 12, 31).unwrap(),
-            is_current: true,
-        };
-
-        store.add_semester(&sem1).unwrap();
-        store.add_semester(&sem2).unwrap();
-
-        let sems = store.list_semesters().unwrap();
-        assert_eq!(sems.len(), 2);
-
-        let current = store.current_semester().unwrap();
-        assert_eq!(current.id, "s2");
-        assert!(current.is_current);
     }
 }

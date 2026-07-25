@@ -20,6 +20,9 @@ use crate::theme;
 use crate::widgets;
 use crate::widgets::StatusKind;
 
+const DEADLINE_DEFAULT_DAYS: u32 = 30;
+const PROBLEMS_PER_PAGE: usize = 20;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
     Dashboard,
@@ -127,13 +130,20 @@ impl App {
         let config = DevCoreConfig::load(project_root)?;
 
         let academic_store = SemesterStore::open(project_root)?;
-        let semesters = academic_store.list_semesters().unwrap_or_default();
+        let mut semesters = academic_store.list_semesters().unwrap_or_default();
+        let mut seed_error: Option<String> = None;
+        if semesters.is_empty() {
+            if let Err(e) = academic_store.seed_2026_data() {
+                seed_error = Some(format!("Seed failed: {}", e));
+            }
+            semesters = academic_store.list_semesters().unwrap_or_default();
+        }
         let current_semester = academic_store.current_semester();
         let sgpa = current_semester.as_ref().and_then(|s| {
             let conn = academic_store.conn().ok()?;
             GradeEntry::compute_sgpa(&conn, &s.id)
         });
-        let deadline_days = 30u32;
+        let deadline_days = DEADLINE_DEFAULT_DAYS;
         let upcoming_deadlines = current_semester.as_ref().and_then(|_| {
             let conn = academic_store.conn().ok()?;
             Some(Deadline::upcoming(&conn, deadline_days as i64).unwrap_or_default())
@@ -171,7 +181,7 @@ impl App {
         let installed_count = engine.list_installed().len();
         let installed_pack_ids: Vec<String> = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
 
-        let per_page = 20;
+        let per_page = PROBLEMS_PER_PAGE;
         let offline_result = engine.list_offline(None, 1, per_page);
 
         let project_engine = ProjectEngine::new(&data_dir);
@@ -195,7 +205,7 @@ impl App {
             repo_analysis,
             languages,
             input_mode: InputMode::Normal,
-            deadline_days: 30,
+            deadline_days: DEADLINE_DEFAULT_DAYS,
             selected_deadline_index: None,
             xp_field: XpField::Axis,
             xp_axis_index: 0,
@@ -204,7 +214,7 @@ impl App {
             input_fields: Vec::new(),
             current_field: 0,
             semester_cursor: 0,
-            status_msg: None,
+            status_msg: seed_error,
             core_store,
             packs,
             installed_count,
@@ -239,7 +249,7 @@ impl App {
     fn refresh_offline_problems(&mut self, difficulty: Option<&str>, page: usize) {
         let data_dir = self.project_root.join(".devcore");
         let engine = ChallengeEngine::new(&data_dir);
-        let per_page = 20;
+        let per_page = PROBLEMS_PER_PAGE;
         let result = engine.list_offline(difficulty, page, per_page);
         self.offline_problems = result.problems;
         self.offline_page = result.page;
@@ -264,7 +274,7 @@ impl App {
         }
     }
 
-    fn all_problems(&self) -> Vec<(&ProblemPack, &devcore_challenges::Problem)> {
+    pub(crate) fn all_problems(&self) -> Vec<(&ProblemPack, &devcore_challenges::Problem)> {
         self.packs
             .iter()
             .flat_map(|pack| {
@@ -524,7 +534,7 @@ impl App {
                             if !course_code.is_empty() && valid_grades.contains(&grade.as_str()) {
                                 if let Some(ref sem) = self.current_semester {
                                     if let Ok(conn) = self.academic_store.conn() {
-                                        if let Ok(Some(course)) = Course::find_by_code(&conn, &course_code) {
+                                        if let Ok(Some(course)) = Course::find_by_code(&conn, &course_code, &sem.id) {
                                             let entry = GradeEntry {
                                                 id: uuid::Uuid::new_v4().to_string(),
                                                 course_id: course.id,
@@ -580,6 +590,27 @@ impl App {
                 }
             }
             KeyCode::Enter => {
+                if let Some(sem) = self.semesters.get(self.semester_cursor) {
+                    let sem_id = sem.id.clone();
+                    if let Err(e) = self.academic_store.set_current_semester(&sem_id) {
+                        self.status_msg = Some(format!("Failed to set semester: {}", e));
+                    } else {
+                        self.current_semester = self.academic_store.current_semester();
+                        if let Some(ref sem) = self.current_semester {
+                            let conn_result = self.academic_store.conn();
+                            if let Ok(conn) = conn_result {
+                                self.sgpa = GradeEntry::compute_sgpa(&conn, &sem.id);
+                                self.course_count = Course::count_for_semester(&conn, &sem.id);
+                                self.total_credits = Course::total_credits_for_semester(&conn, &sem.id);
+                                self.upcoming_deadlines = Deadline::upcoming(&conn, self.deadline_days as i64).unwrap_or_default();
+                            }
+                        }
+                        self.cgpa = self.academic_store.conn().ok().and_then(|conn| {
+                            GradeEntry::compute_cgpa(&conn)
+                        });
+                        self.status_msg = Some(format!("Semester set to '{}'", self.semesters[self.semester_cursor].name));
+                    }
+                }
                 self.input_mode = InputMode::Normal;
             }
             _ => {}
@@ -845,15 +876,21 @@ impl App {
                     if idx < problems.len() {
                         let (pack, problem) = problems[idx];
                         if let Ok(conn) = self.core_store.conn() {
-                            let _ = devcore_challenges::progress::init_challenge_schema(&conn);
-                            let _ = devcore_challenges::progress::record_attempt(
+                            if let Err(e) = devcore_challenges::progress::init_challenge_schema(&conn) {
+                                self.status_msg = Some(format!("Failed to init schema: {}", e));
+                            } else if let Err(e) = devcore_challenges::progress::record_attempt(
                                 &conn,
                                 &problem.id,
                                 &pack.id,
                                 false,
                                 0,
-                            );
-                            self.status_msg = Some("Attempt recorded".to_string());
+                            ) {
+                                self.status_msg = Some(format!("Failed to record attempt: {}", e));
+                            } else {
+                                self.status_msg = Some("Attempt recorded".to_string());
+                            }
+                        } else {
+                            self.status_msg = Some("Failed to open database".to_string());
                         }
                     }
                 }
@@ -864,13 +901,19 @@ impl App {
                     if idx < problems.len() {
                         let (pack, problem) = problems[idx];
                         if let Ok(conn) = self.core_store.conn() {
-                            let _ = devcore_challenges::progress::init_challenge_schema(&conn);
-                            let _ = devcore_challenges::progress::record_hint(
+                            if let Err(e) = devcore_challenges::progress::init_challenge_schema(&conn) {
+                                self.status_msg = Some(format!("Failed to init schema: {}", e));
+                            } else if let Err(e) = devcore_challenges::progress::record_hint(
                                 &conn,
                                 &problem.id,
                                 &pack.id,
-                            );
-                            self.status_msg = Some("Hint recorded".to_string());
+                            ) {
+                                self.status_msg = Some(format!("Failed to record hint: {}", e));
+                            } else {
+                                self.status_msg = Some("Hint recorded".to_string());
+                            }
+                        } else {
+                            self.status_msg = Some("Failed to open database".to_string());
                         }
                     }
                 }
@@ -930,8 +973,7 @@ impl App {
             InputMode::Normal => match self.active_tab {
                 Tab::Dashboard => vec![
                     widgets::KeyBinding { key: "1-4", label: "Tabs", color: theme::MAUVE },
-                    widgets::KeyBinding { key: "j/k", label: "Nav", color: theme::BLUE },
-                    widgets::KeyBinding { key: "x", label: "Complete", color: theme::TEAL },
+                    widgets::KeyBinding { key: "Tab", label: "Next", color: theme::BLUE },
                     widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
                 ],
                 Tab::Academic => vec![
@@ -963,7 +1005,7 @@ impl App {
                 widgets::KeyBinding { key: "Esc", label: "Cancel", color: theme::RED },
             ],
         };
-        widgets::status_bar(frame, chunks[2], &keybindings);
+        widgets::status_bar(frame, chunks[2], &keybindings, self.status_msg.as_deref());
 
         match self.input_mode {
             InputMode::ConfirmingInstall => {
@@ -1062,7 +1104,7 @@ impl App {
                 let form_area = Rect::new(x, y, form_width, form_height);
                 let mut lines: Vec<Line> = Vec::new();
                 for (i, sem) in self.semesters.iter().take(10).enumerate() {
-                    let marker = if i == self.semester_cursor { " ▸ " } else { "   " };
+                    let marker = if i == self.semester_cursor { " > " } else { "   " };
                     let style = if i == self.semester_cursor {
                         Style::default().fg(theme::YELLOW).add_modifier(Modifier::BOLD)
                     } else {

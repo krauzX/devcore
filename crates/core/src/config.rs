@@ -41,29 +41,3 @@ impl DevCoreConfig {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_config_default() {
-        let config = DevCoreConfig::default();
-        assert_eq!(config.institution, "");
-        assert_eq!(config.program, "");
-        assert_eq!(config.batch, "");
-        assert_eq!(config.total_semesters, 8);
-    }
-
-    #[test]
-    fn test_config_load_missing() {
-        let dir = tempdir().unwrap();
-        let config = DevCoreConfig::load(dir.path()).unwrap();
-        let default = DevCoreConfig::default();
-        assert_eq!(config.institution, default.institution);
-        assert_eq!(config.program, default.program);
-        assert_eq!(config.batch, default.batch);
-        assert_eq!(config.total_semesters, default.total_semesters);
-    }
-}

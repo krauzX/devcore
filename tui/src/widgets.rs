@@ -19,8 +19,20 @@ pub struct KeyBinding {
     pub color: Color,
 }
 
-pub fn status_bar(frame: &mut Frame, area: Rect, keybindings: &[KeyBinding]) {
+pub fn status_bar(frame: &mut Frame, area: Rect, keybindings: &[KeyBinding], status_msg: Option<&str>) {
     let mut spans: Vec<Span> = Vec::new();
+    if let Some(msg) = status_msg {
+        let msg_color = if msg.starts_with("Failed") || msg.starts_with("Error") || msg.starts_with("Invalid") || msg.starts_with("No ") {
+            theme::RED
+        } else {
+            theme::GREEN
+        };
+        spans.push(Span::styled(
+            format!(" {} ", msg),
+            Style::default().fg(msg_color).add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled("  ", Style::default()));
+    }
     for (i, kb) in keybindings.iter().enumerate() {
         if i > 0 {
             spans.push(Span::styled("│", Style::default().fg(theme::OVERLAY)));
@@ -118,7 +130,7 @@ pub fn render_input_form(
 
     for (i, (label, value)) in labels.iter().zip(values.iter()).enumerate() {
         let is_active = i == current_field;
-        let marker = if is_active { "▶" } else { " " };
+        let marker = if is_active { "> " } else { "  " };
         let label_style = if is_active {
             Style::default()
                 .fg(theme::YELLOW)
