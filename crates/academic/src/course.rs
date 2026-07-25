@@ -11,23 +11,6 @@ pub struct Course {
 }
 
 impl Course {
-    #[allow(dead_code)]
-    pub fn list_for_semester(conn: &Connection, semester_id: &str) -> Result<Vec<Course>, rusqlite::Error> {
-        let mut stmt = conn
-            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE semester_id = ?1 ORDER BY code")?;
-        let rows = stmt
-            .query_map(params![semester_id], |row| {
-                Ok(Course {
-                    id: row.get(0)?,
-                    semester_id: row.get(1)?,
-                    name: row.get(2)?,
-                    code: row.get(3)?,
-                    credits: row.get(4)?,
-                })
-            })?;
-        Ok(rows.filter_map(|r| r.ok()).collect())
-    }
-
     pub fn add(conn: &Connection, course: &Course) -> Result<(), rusqlite::Error> {
         conn.execute(
             "INSERT OR IGNORE INTO courses (id, semester_id, name, code, credits) VALUES (?1, ?2, ?3, ?4, ?5)",

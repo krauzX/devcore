@@ -25,7 +25,7 @@ A local-first developer productivity toolkit for college students. Built in Rust
 - 5 builtin problem packs (arrays, linked lists, stacks, trees, graphs)
 - Install/remove packs on demand
 - LeetCode GraphQL API integration
-- 5 build-your-own projects (shell, git, HTTP server, Redis, compiler)
+- 10 build-your-own projects (shell, git, HTTP server, Redis, compiler, text-editor, interpreter, database, regex, rustlings)
 
 ### System Tray
 - Cloudflare-style daily dashboard
@@ -102,7 +102,7 @@ devcore/
 ## Testing
 
 ```bash
-cargo test --workspace    # 16 tests
+cargo test --workspace    # 6 integration tests
 cargo clippy --workspace  # 0 warnings
 ```
 
