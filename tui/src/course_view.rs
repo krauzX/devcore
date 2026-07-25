@@ -17,7 +17,7 @@ pub fn render_course_view(
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),  // header
-            Constraint::Min(0),    // body
+            Constraint::Min(5),    // body
             Constraint::Length(1), // footer
         ])
         .split(area);
@@ -28,7 +28,7 @@ pub fn render_course_view(
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Percentage(22), // stage navigator
-            Constraint::Min(0),         // content (or content + solution split)
+            Constraint::Min(5),         // content (or content + solution split)
         ])
         .split(outer_chunks[1]);
 
@@ -82,7 +82,7 @@ fn render_header(
         .constraints([
             Constraint::Length(12), // difficulty
             Constraint::Length(14), // language
-            Constraint::Min(0),    // progress bar
+            Constraint::Min(5),    // progress bar
             Constraint::Length(20), // stage indicator
         ])
         .split(inner);
@@ -276,7 +276,7 @@ fn render_stage_content(
 
     let outer = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0)])
+        .constraints([Constraint::Length(3), Constraint::Min(5)])
         .split(area);
 
     // Stage header: name + description
@@ -305,7 +305,7 @@ fn render_stage_content(
     let content_chunks = if stage.tests.is_empty() {
         Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Min(0)])
+            .constraints([Constraint::Min(5)])
             .split(outer[1])
     } else {
         Layout::default()

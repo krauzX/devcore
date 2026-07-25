@@ -4,9 +4,15 @@ use ratatui::widgets::*;
 use crate::app::App;
 use crate::theme;
 use crate::widgets;
+use crate::widgets::is_compact;
 use devcore_devtrack::{SkillAxis, MAX_LEVEL, XP_PER_LEVEL};
 
 pub fn render_git_tab(frame: &mut Frame, area: Rect, app: &App) {
+    if is_compact(area) {
+        render_compact_git(frame, area, app);
+        return;
+    }
+
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
@@ -22,6 +28,22 @@ pub fn render_git_tab(frame: &mut Frame, area: Rect, app: &App) {
     render_streak_panel(frame, left[0], app);
     render_repo_analysis(frame, left[1], app);
     render_skills_panel(frame, chunks[1], app);
+}
+
+fn render_compact_git(frame: &mut Frame, area: Rect, app: &App) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(5),
+            Constraint::Min(5),
+            Constraint::Min(5),
+        ])
+        .spacing(1)
+        .split(area);
+
+    render_streak_panel(frame, chunks[0], app);
+    render_repo_analysis(frame, chunks[1], app);
+    render_skills_panel(frame, chunks[2], app);
 }
 
 fn render_streak_panel(frame: &mut Frame, area: Rect, app: &App) {

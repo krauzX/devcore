@@ -20,10 +20,9 @@ use crate::dashboard::render_dashboard;
 use crate::git_tab::render_git_tab;
 use crate::theme;
 use crate::widgets;
-use crate::widgets::StatusKind;
+use crate::widgets::{is_compact, StatusKind};
 
 const DEADLINE_DEFAULT_DAYS: u32 = 30;
-const PROBLEMS_PER_PAGE: usize = 20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
@@ -128,6 +127,7 @@ pub struct App {
     pub(crate) project_progress: Vec<ProjectProgress>,
     pub(crate) course_stage_cursor: usize,
     pub(crate) show_solutions: bool,
+    last_area: Option<Rect>,
 }
 
 impl App {
@@ -186,7 +186,7 @@ impl App {
         let installed_count = engine.list_installed().len();
         let installed_pack_ids: Vec<String> = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
 
-        let per_page = PROBLEMS_PER_PAGE;
+        let per_page = 20;
         let offline_result = engine.list_offline(None, 1, per_page);
 
         let project_engine = ProjectEngine::new(&data_dir);
@@ -238,6 +238,7 @@ impl App {
             project_progress,
             course_stage_cursor: 0,
             show_solutions: false,
+            last_area: None,
         })
     }
 
@@ -258,7 +259,10 @@ impl App {
     fn refresh_offline_problems(&mut self, difficulty: Option<&str>, page: usize) {
         let data_dir = self.project_root.join(".devcore");
         let engine = ChallengeEngine::new(&data_dir);
-        let per_page = PROBLEMS_PER_PAGE;
+        let per_page = self.last_area
+            .map(|a| a.height.saturating_sub(5) as usize)
+            .unwrap_or(20)
+            .max(5);
         let result = engine.list_offline(difficulty, page, per_page);
         self.offline_problems = result.problems;
         self.offline_page = result.page;
@@ -301,6 +305,9 @@ impl App {
     fn event_loop(&mut self) -> Result<()> {
         let mut terminal = ratatui::init();
         loop {
+            if let Ok((cols, rows)) = crossterm::terminal::size() {
+                self.last_area = Some(Rect::new(0, 0, cols, rows));
+            }
             terminal.draw(|frame| self.draw(frame))?;
 
             if event::poll(Duration::from_millis(250))? {
@@ -1070,6 +1077,21 @@ impl App {
     fn draw(&self, frame: &mut Frame) {
         let area = frame.area();
 
+        if area.width < 40 || area.height < 15 {
+            let msg = "Terminal too small. Minimum: 40x15";
+            let x = area.x + area.width.saturating_sub(msg.len() as u16) / 2;
+            let y = area.y + area.height / 2;
+            frame.render_widget(
+                Paragraph::new(Line::from(Span::styled(
+                    msg,
+                    Style::default().fg(theme::RED).add_modifier(Modifier::BOLD),
+                )))
+                .alignment(Alignment::Center),
+                Rect::new(x, y, msg.len() as u16, 1),
+            );
+            return;
+        }
+
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
@@ -1085,7 +1107,7 @@ impl App {
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(1)])
+            .constraints([Constraint::Min(2), Constraint::Min(5), Constraint::Length(1)])
             .split(inner);
 
         let spans: Vec<Span> = Tab::all()
@@ -1115,6 +1137,27 @@ impl App {
         }
 
         let keybindings: Vec<widgets::KeyBinding> = match self.input_mode {
+            InputMode::Normal if is_compact(area) => match self.active_tab {
+                Tab::Dashboard => vec![
+                    widgets::KeyBinding { key: "1-4", label: "Tabs", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "Tab", label: "Next", color: theme::BLUE },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+                Tab::Academic => vec![
+                    widgets::KeyBinding { key: "c/d/g", label: "Add", color: theme::GREEN },
+                    widgets::KeyBinding { key: "s", label: "Sem", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+                Tab::Git => vec![
+                    widgets::KeyBinding { key: "x", label: "Add XP", color: theme::GREEN },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+                Tab::Challenges => vec![
+                    widgets::KeyBinding { key: "i/r", label: "Pack", color: theme::GREEN },
+                    widgets::KeyBinding { key: "Enter", label: "View", color: theme::BLUE },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+            },
             InputMode::Normal => match self.active_tab {
                 Tab::Dashboard => vec![
                     widgets::KeyBinding { key: "1-4", label: "Tabs", color: theme::MAUVE },

@@ -4,15 +4,21 @@ use ratatui::widgets::*;
 use crate::app::App;
 use crate::theme;
 use crate::widgets;
+use crate::widgets::is_compact;
 
 pub fn render_dashboard(frame: &mut Frame, area: Rect, app: &App) {
+    if is_compact(area) {
+        render_compact_dashboard(frame, area, app);
+        return;
+    }
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Min(0),
+            Constraint::Min(2),
+            Constraint::Min(2),
+            Constraint::Min(2),
+            Constraint::Min(5),
         ])
         .spacing(1)
         .split(area);
@@ -21,6 +27,26 @@ pub fn render_dashboard(frame: &mut Frame, area: Rect, app: &App) {
     render_sgpa_gauge(frame, chunks[1], app);
     render_stats_summary(frame, chunks[2], app);
     render_bottom(frame, chunks[3], app);
+}
+
+fn render_compact_dashboard(frame: &mut Frame, area: Rect, app: &App) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(2),
+            Constraint::Min(2),
+            Constraint::Min(2),
+            Constraint::Min(5),
+            Constraint::Min(5),
+        ])
+        .spacing(1)
+        .split(area);
+
+    render_semester_info(frame, chunks[0], app);
+    render_sgpa_gauge(frame, chunks[1], app);
+    render_stats_summary(frame, chunks[2], app);
+    render_deadline_list(frame, chunks[3], app);
+    render_quick_actions(frame, chunks[4], app);
 }
 
 fn render_semester_info(frame: &mut Frame, area: Rect, app: &App) {

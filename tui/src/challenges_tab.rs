@@ -3,9 +3,15 @@ use ratatui::widgets::*;
 
 use crate::app::App;
 use crate::theme;
+use crate::widgets::is_compact;
 use devcore_challenges::{Difficulty, ProjectProgress};
 
 pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
+    if is_compact(area) {
+        render_compact_challenges(frame, area, app);
+        return;
+    }
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -30,6 +36,28 @@ pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
     }
 
     render_offline_problems(frame, chunks[1], app);
+}
+
+fn render_compact_challenges(frame: &mut Frame, area: Rect, app: &App) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(5),
+            Constraint::Min(5),
+            Constraint::Min(5),
+        ])
+        .spacing(1)
+        .split(area);
+
+    render_packs_panel(frame, chunks[0], app);
+
+    if app.show_projects {
+        render_project_list(frame, chunks[1], app);
+    } else {
+        render_problems_panel(frame, chunks[1], app);
+    }
+
+    render_offline_problems(frame, chunks[2], app);
 }
 
 fn difficulty_color(diff: &Difficulty) -> Color {

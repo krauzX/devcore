@@ -6,6 +6,10 @@ use crate::theme;
 use devcore_academic::UrgencyLevel;
 use devcore_challenges::{Problem, ProjectPack, ProjectProgress};
 
+pub fn is_compact(area: Rect) -> bool {
+    area.width < 80 || area.height < 24
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StatusKind {
     Success,
@@ -204,7 +208,7 @@ pub fn render_input_form(
 
 pub fn render_confirm_popup(frame: &mut Frame, area: Rect, message: &str, hint: &str) {
     let popup_width = (area.width as usize).clamp(40, 60) as u16;
-    let popup_height = 7u16;
+    let popup_height = 7u16.min(area.height.saturating_sub(2));
     let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
     let y = area.y + (area.height.saturating_sub(popup_height)) / 2;
     let popup_area = Rect::new(x, y, popup_width, popup_height);
@@ -250,8 +254,8 @@ pub fn render_confirm_popup(frame: &mut Frame, area: Rect, message: &str, hint: 
 }
 
 pub fn render_problem_detail(frame: &mut Frame, area: Rect, problem: &Problem) {
-    let popup_width = (area.width as usize).clamp(50, 80) as u16;
-    let popup_height = (area.height as usize).clamp(15, 30) as u16;
+    let popup_width = (area.width as usize).clamp(30, area.width.saturating_sub(2) as usize) as u16;
+    let popup_height = (area.height as usize).clamp(10, area.height.saturating_sub(2) as usize) as u16;
     let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
     let y = area.y + (area.height.saturating_sub(popup_height)) / 2;
     let popup_area = Rect::new(x, y, popup_width, popup_height);
@@ -414,8 +418,8 @@ pub fn render_problem_detail(frame: &mut Frame, area: Rect, problem: &Problem) {
 }
 
 pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPack, progress: Option<&ProjectProgress>) {
-    let popup_width = (area.width as usize).clamp(50, 90) as u16;
-    let popup_height = (area.height as usize).clamp(15, 35) as u16;
+    let popup_width = (area.width as usize).clamp(30, area.width.saturating_sub(2) as usize) as u16;
+    let popup_height = (area.height as usize).clamp(10, area.height.saturating_sub(2) as usize) as u16;
     let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
     let y = area.y + (area.height.saturating_sub(popup_height)) / 2;
     let popup_area = Rect::new(x, y, popup_width, popup_height);
@@ -559,7 +563,7 @@ pub(crate) fn render_add_xp_popup(
     current_field: XpField,
 ) {
     let popup_width = (area.width as usize).clamp(35, 50) as u16;
-    let popup_height = 10u16;
+    let popup_height = 10u16.min(area.height.saturating_sub(2));
     let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
     let y = area.y + (area.height.saturating_sub(popup_height)) / 2;
     let popup_area = Rect::new(x, y, popup_width, popup_height);
