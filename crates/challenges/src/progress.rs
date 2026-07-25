@@ -109,10 +109,17 @@ pub fn record_hint(
         .ok_or_else(|| RecordAttemptError::Database(rusqlite::Error::QueryReturnedNoRows))
 }
 
+#[derive(Debug, Clone)]
+pub struct PackStats {
+    pub solved: i64,
+    pub total: i64,
+    pub time: i64,
+}
+
 pub fn get_pack_stats(
     conn: &Connection,
     pack_id: &str,
-) -> Result<(i64, i64, i64), rusqlite::Error> {
+) -> Result<PackStats, rusqlite::Error> {
     let mut stmt = conn.prepare(
         "SELECT
             COUNT(CASE WHEN solved = 1 THEN 1 END) as solved,
@@ -122,11 +129,15 @@ pub fn get_pack_stats(
          WHERE pack_id = ?1",
     )?;
     let mut rows = stmt.query_map(params![pack_id], |row| {
-        Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?))
+        Ok(PackStats {
+            solved: row.get::<_, i64>(0)?,
+            total: row.get::<_, i64>(1)?,
+            time: row.get::<_, i64>(2)?,
+        })
     })?;
     match rows.next() {
         Some(Ok(stats)) => Ok(stats),
         Some(Err(e)) => Err(e),
-        None => Ok((0, 0, 0)),
+        None => Ok(PackStats { solved: 0, total: 0, time: 0 }),
     }
 }

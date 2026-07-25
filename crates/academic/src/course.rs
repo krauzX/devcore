@@ -10,6 +10,7 @@ pub struct Course {
 }
 
 impl Course {
+    #[allow(dead_code)]
     pub fn list_for_semester(conn: &Connection, semester_id: &str) -> Result<Vec<Course>, rusqlite::Error> {
         let mut stmt = conn
             .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE semester_id = ?1 ORDER BY code")?;

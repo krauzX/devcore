@@ -451,8 +451,9 @@ pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPac
     frame.render_widget(footer, chunks[2]);
 
     if !project.readme.is_empty() {
-        let readme_text = if project.readme.len() > 500 {
-            format!("{}...", &project.readme[..500])
+        let readme_text = if project.readme.chars().count() > 500 {
+            let truncated: String = project.readme.chars().take(500).collect();
+            format!("{}...", truncated)
         } else {
             project.readme.clone()
         };

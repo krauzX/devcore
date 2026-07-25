@@ -12,7 +12,7 @@ use challenges_cmd::DsaCmd;
 use git_cmd::GitCmd;
 
 #[derive(Parser)]
-#[command(name = "devcore", about = "DevCore CLI — academic tracker, git forge, DSA challenges")]
+#[command(name = "devcore", version = env!("CARGO_PKG_VERSION"), about = "DevCore CLI — academic tracker, git forge, DSA challenges")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -20,7 +20,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Launch TUI dashboard
     Tui,
+    /// Start system tray daemon
     Tray,
     #[command(name = "academic")]
     Academic(AcademicCmd),

@@ -514,7 +514,10 @@ impl ProjectEngine {
     }
 
     pub fn get_project(&self, project_id: &str) -> Option<&ProjectPack> {
-        self.builtin.iter().find(|p| p.id == project_id)
+        self.builtin
+            .iter()
+            .chain(self.installed.iter())
+            .find(|p| p.id == project_id)
     }
 
     pub fn install_project(&mut self, project_id: &str) -> Result<(), String> {

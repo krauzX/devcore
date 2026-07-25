@@ -50,6 +50,12 @@ impl Store {
         )?;
         Ok(())
     }
+
+    pub fn delete(&self, key: &str) -> Result<(), DevCoreError> {
+        let conn = self.conn()?;
+        conn.execute("DELETE FROM kv_store WHERE key = ?1", params![key])?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

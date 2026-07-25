@@ -67,6 +67,15 @@ pub enum AcademicAction {
     Sgpa,
     /// Compute overall CGPA across all semesters
     Cgpa,
+    /// Save DevCore configuration
+    SaveConfig {
+        #[arg(long)]
+        institution: String,
+        #[arg(long)]
+        program: String,
+        #[arg(long)]
+        batch: String,
+    },
 }
 
 pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
@@ -170,6 +179,11 @@ pub fn run(cmd: AcademicCmd, project_root: &Path) -> Result<()> {
         } => run_course(project_root, &code, &name, credits),
         AcademicAction::Sgpa => run_sgpa(project_root),
         AcademicAction::Cgpa => run_cgpa(project_root),
+        AcademicAction::SaveConfig {
+            institution,
+            program,
+            batch,
+        } => run_save_config(project_root, &institution, &program, &batch),
     }
 }
 
@@ -390,6 +404,19 @@ fn run_sgpa(project_root: &Path) -> Result<()> {
         None => println!("  No grades recorded for this semester yet."),
     }
 
+    Ok(())
+}
+
+fn run_save_config(project_root: &Path, institution: &str, program: &str, batch: &str) -> Result<()> {
+    let mut config = devcore_core::DevCoreConfig::load(project_root)?;
+    config.institution = institution.to_string();
+    config.program = program.to_string();
+    config.batch = batch.to_string();
+    config.save(project_root)?;
+    println!("Configuration saved:");
+    println!("  Institution: {}", config.institution);
+    println!("  Program:     {}", config.program);
+    println!("  Batch:       {}", config.batch);
     Ok(())
 }
 

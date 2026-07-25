@@ -102,7 +102,7 @@ pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
                 "Offline Problems (page {}/{}, showing {}-{} of {})",
                 result.page,
                 result.total_pages,
-                ((result.page - 1) * result.per_page + 1).min(result.total),
+                (result.page.saturating_sub(1) * result.per_page + 1).min(result.total),
                 (result.page * result.per_page).min(result.total),
                 result.total
             );

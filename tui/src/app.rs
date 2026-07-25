@@ -442,7 +442,7 @@ impl App {
                 }
             }
             KeyCode::Down => {
-                if self.current_field + 1 < if self.input_fields.is_empty().not() { self.input_fields.len() } else { 0 } {
+                if !self.input_fields.is_empty() && self.current_field + 1 < self.input_fields.len() {
                     self.current_field += 1;
                 }
             }
@@ -452,7 +452,7 @@ impl App {
                 }
             }
             KeyCode::Backspace => {
-                if self.current_field < if self.input_fields.is_empty().not() { self.input_fields.len() } else { 0 } {
+                if !self.input_fields.is_empty() && self.current_field < self.input_fields.len() {
                     self.input_fields[self.current_field].value.pop();
                 }
             }
@@ -1043,15 +1043,5 @@ impl App {
             }
             InputMode::Normal => {}
         }
-    }
-}
-
-trait BoolHelper {
-    fn not(self) -> bool;
-}
-
-impl BoolHelper for bool {
-    fn not(self) -> bool {
-        !self
     }
 }
