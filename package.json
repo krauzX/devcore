@@ -1,0 +1,41 @@
+{
+  "name": "@krauz/devcore",
+  "version": "1.0.0",
+  "description": "Student productivity toolkit for college students",
+  "bin": {
+    "devcore": "bin/devcore"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "productivity",
+    "student",
+    "leetcode",
+    "dsa",
+    "academic",
+    "tui",
+    "rust"
+  ],
+  "author": "krauzX",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krauzX/devcore.git"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md",
+    "LICENSE"
+  ],
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}
