@@ -89,7 +89,7 @@ pub fn urgency_color(level: UrgencyLevel) -> Color {
 
 fn urgency_label_padded(level: UrgencyLevel) -> String {
     match level {
-        UrgencyLevel::Overdue => "[OVRD]".to_string(),
+        UrgencyLevel::Overdue => "[OVR]".to_string(),
         UrgencyLevel::Critical => "[!!!]".to_string(),
         UrgencyLevel::Warning => " [!!]".to_string(),
         UrgencyLevel::Soon => "  [!]".to_string(),

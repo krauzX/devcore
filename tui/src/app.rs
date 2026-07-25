@@ -82,7 +82,6 @@ pub struct App {
     active_tab: Tab,
     project_root: PathBuf,
     pub(crate) config: DevCoreConfig,
-    #[allow(dead_code)]
     pub(crate) academic_store: SemesterStore,
     pub(crate) semesters: Vec<devcore_academic::Semester>,
     pub(crate) current_semester: Option<devcore_academic::Semester>,
@@ -104,19 +103,11 @@ pub struct App {
     pub(crate) xp_reason: String,
     pub(crate) input_fields: Vec<InputField>,
     pub(crate) current_field: usize,
-    #[allow(dead_code)]
-    pub(crate) field_cursor: usize,
     pub(crate) semester_cursor: usize,
-    #[allow(dead_code)]
-    pub(crate) course_selector: usize,
-    #[allow(dead_code)]
-    pub(crate) grade_courses: Vec<Course>,
     pub(crate) status_msg: Option<String>,
     core_store: Store,
     pub(crate) packs: Vec<ProblemPack>,
     pub(crate) installed_count: usize,
-    #[allow(dead_code)]
-    pub(crate) solved_count: usize,
     pub(crate) offline_problems: Vec<OfflineProblem>,
     pub(crate) offline_page: usize,
     pub(crate) offline_total_pages: usize,
@@ -177,16 +168,6 @@ impl App {
         let packs = engine.list_available().to_vec();
         let installed_count = engine.list_installed().len();
         let installed_pack_ids: Vec<String> = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
-        let solved_count = {
-            let conn = core_store.conn()?;
-            devcore_challenges::progress::init_challenge_schema(&conn).ok();
-            conn.query_row(
-                "SELECT COUNT(*) FROM challenge_progress WHERE solved = 1",
-                [],
-                |row| row.get::<_, usize>(0),
-            )
-            .unwrap_or(0)
-        };
 
         let per_page = 20;
         let offline_result = engine.list_offline(None, 1, per_page);
@@ -220,15 +201,11 @@ impl App {
             xp_reason: String::new(),
             input_fields: Vec::new(),
             current_field: 0,
-            field_cursor: 0,
             semester_cursor: 0,
-            course_selector: 0,
-            grade_courses: Vec::new(),
             status_msg: None,
             core_store,
             packs,
             installed_count,
-            solved_count,
             offline_problems: offline_result.problems,
             offline_page: offline_result.page,
             offline_total_pages: offline_result.total_pages,
@@ -525,7 +502,7 @@ impl App {
                             if !course_code.is_empty() && valid_grades.contains(&grade.as_str()) {
                                 if let Some(ref sem) = self.current_semester {
                                     if let Ok(conn) = self.academic_store.conn() {
-                                        if let Some(course) = Course::find_by_code(&conn, &course_code) {
+                                        if let Ok(Some(course)) = Course::find_by_code(&conn, &course_code) {
                                             let entry = GradeEntry {
                                                 id: uuid::Uuid::new_v4().to_string(),
                                                 course_id: course.id,

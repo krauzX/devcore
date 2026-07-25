@@ -79,7 +79,8 @@ pub fn analyze_repo(path: &Path) -> Result<RepoAnalysis> {
     let mut total_deletions = 0usize;
     let mut files_touched: HashSet<String> = HashSet::new();
     let mut authors: HashSet<String> = HashSet::new();
-    let mut timestamps: Vec<i64> = Vec::new();
+    let mut first_ts: Option<i64> = None;
+    let mut last_ts: Option<i64> = None;
 
     for oid_result in revwalk {
         let oid = oid_result?;
@@ -91,7 +92,12 @@ pub fn analyze_repo(path: &Path) -> Result<RepoAnalysis> {
         authors.insert(author_name);
 
         let ts = commit.time().seconds();
-        timestamps.push(ts);
+        if first_ts.is_none_or(|f| ts < f) {
+            first_ts = Some(ts);
+        }
+        if last_ts.is_none_or(|l| ts > l) {
+            last_ts = Some(ts);
+        }
 
         if commit.parent_count() > 0 {
             let parent = commit.parent(0)?;
@@ -115,12 +121,8 @@ pub fn analyze_repo(path: &Path) -> Result<RepoAnalysis> {
         }
     }
 
-    let first_commit = timestamps.iter().min().and_then(|&ts| {
-        DateTime::from_timestamp(ts, 0)
-    });
-    let last_commit = timestamps.iter().max().and_then(|&ts| {
-        DateTime::from_timestamp(ts, 0)
-    });
+    let first_commit = first_ts.and_then(|ts| DateTime::from_timestamp(ts, 0));
+    let last_commit = last_ts.and_then(|ts| DateTime::from_timestamp(ts, 0));
 
     Ok(RepoAnalysis {
         total_commits,

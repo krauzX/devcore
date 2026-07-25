@@ -100,6 +100,11 @@ pub struct ChallengeEngine {
     packs_dir: PathBuf,
 }
 
+static ONLINE_PROBLEMS: Lazy<Vec<OnlineProblem>> = Lazy::new(|| {
+    let data = include_str!("../data/leetcode_clean.json");
+    serde_json::from_str(data).unwrap_or_default()
+});
+
 static OFFLINE_PROBLEMS: Lazy<Vec<OfflineProblem>> = Lazy::new(|| {
     let data = include_str!("../data/leetcode_official.json");
     let wrapper: OfflineWrapper = serde_json::from_str(data).unwrap_or(OfflineWrapper { stat_status_pairs: None });
@@ -249,9 +254,8 @@ impl ChallengeEngine {
             .collect()
     }
 
-    pub fn load_online_problems(&self) -> Vec<OnlineProblem> {
-        let data = include_str!("../data/leetcode_clean.json");
-        serde_json::from_str(data).unwrap_or_default()
+    pub fn load_online_problems(&self) -> &Vec<OnlineProblem> {
+        &ONLINE_PROBLEMS
     }
 
     pub fn list_online(
@@ -262,7 +266,7 @@ impl ChallengeEngine {
     ) -> OnlineProblemListResult {
         let all = self.load_online_problems();
         let filtered: Vec<OnlineProblem> = all
-            .into_iter()
+            .iter()
             .filter(|p| {
                 if let Some(diff) = difficulty {
                     p.difficulty.to_string().to_lowercase() == diff.to_lowercase()
@@ -270,6 +274,7 @@ impl ChallengeEngine {
                     true
                 }
             })
+            .cloned()
             .collect();
         let total = filtered.len();
         let total_pages = if per_page > 0 {
@@ -291,8 +296,8 @@ impl ChallengeEngine {
         }
     }
 
-    pub fn load_offline_problems(&self) -> Vec<OfflineProblem> {
-        OFFLINE_PROBLEMS.clone()
+    pub fn load_offline_problems(&self) -> &Vec<OfflineProblem> {
+        &OFFLINE_PROBLEMS
     }
 
     pub fn list_offline(
@@ -302,8 +307,8 @@ impl ChallengeEngine {
         per_page: usize,
     ) -> OfflineProblemListResult {
         let all = self.load_offline_problems();
-        let filtered: Vec<OfflineProblem> = all
-            .into_iter()
+        let filtered: Vec<&OfflineProblem> = all
+            .iter()
             .filter(|p| {
                 if let Some(diff) = difficulty {
                     p.difficulty.to_string().to_lowercase() == diff.to_lowercase()
@@ -321,7 +326,7 @@ impl ChallengeEngine {
         let page = page.max(1).min(total_pages.max(1));
         let start = ((page - 1) * per_page).min(total);
         let end = (start + per_page).min(total);
-        let problems = filtered[start..end].to_vec();
+        let problems = filtered[start..end].iter().map(|p| (*p).clone()).collect();
 
         OfflineProblemListResult {
             problems,
@@ -334,7 +339,7 @@ impl ChallengeEngine {
 
     pub fn get_offline_problem(&self, slug: &str) -> Option<OfflineProblem> {
         let all = self.load_offline_problems();
-        all.into_iter().find(|p| p.slug == slug)
+        all.iter().find(|p| p.slug == slug).cloned()
     }
 }
 

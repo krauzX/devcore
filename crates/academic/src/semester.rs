@@ -69,7 +69,7 @@ impl SemesterStore {
     pub fn open(project_root: &Path) -> SqlResult<Self> {
         let db_dir = project_root.join(".devcore");
         std::fs::create_dir_all(&db_dir)
-            .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
+            .map_err(|e| rusqlite::Error::InvalidParameterName(format!("failed to create dir: {}", e)))?;
         let db_path = db_dir.join("academic.db");
         let conn = Connection::open(&db_path)?;
         conn.execute_batch("PRAGMA foreign_keys = ON;")?;
@@ -95,8 +95,12 @@ impl SemesterStore {
                 Ok(Semester {
                     id: row.get(0)?,
                     name: row.get(1)?,
-                    start_date: row.get::<_, String>(2)?.parse().unwrap_or_default(),
-                    end_date: row.get::<_, String>(3)?.parse().unwrap_or_default(),
+                    start_date: row.get::<_, String>(2)?.parse().ok()
+                        .filter(|d| *d > NaiveDate::from_ymd_opt(2000, 1, 1).unwrap())
+                        .unwrap_or_default(),
+                    end_date: row.get::<_, String>(3)?.parse().ok()
+                        .filter(|d| *d > NaiveDate::from_ymd_opt(2000, 1, 1).unwrap())
+                        .unwrap_or_default(),
                     is_current: row.get::<_, i32>(4)? != 0,
                 })
             })
@@ -113,8 +117,12 @@ impl SemesterStore {
                 Ok(Semester {
                     id: row.get(0)?,
                     name: row.get(1)?,
-                    start_date: row.get::<_, String>(2)?.parse().unwrap_or_default(),
-                    end_date: row.get::<_, String>(3)?.parse().unwrap_or_default(),
+                    start_date: row.get::<_, String>(2)?.parse().ok()
+                        .filter(|d| *d > NaiveDate::from_ymd_opt(2000, 1, 1).unwrap())
+                        .unwrap_or_default(),
+                    end_date: row.get::<_, String>(3)?.parse().ok()
+                        .filter(|d| *d > NaiveDate::from_ymd_opt(2000, 1, 1).unwrap())
+                        .unwrap_or_default(),
                     is_current: row.get::<_, i32>(4)? != 0,
                 })
             })?;

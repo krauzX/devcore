@@ -55,7 +55,7 @@ impl TrayApp {
                         let _ = launch_tui(&project_root);
                     }
                     ID_QUIT => {
-                        std::process::exit(0);
+                        *control_flow = ControlFlow::Exit;
                     }
                     _ => {}
                 }

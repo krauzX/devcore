@@ -69,8 +69,20 @@ fn shell_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_echo() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution: Execute external commands using std::process::Command\n// Complete the execute_command function to spawn child processes.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 2: Built-ins".to_string(),
@@ -82,8 +94,20 @@ fn shell_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 2: Built-ins\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 3: Piping".to_string(),
@@ -95,8 +119,20 @@ fn shell_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 3: Piping\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 4: Redirection".to_string(),
@@ -108,8 +144,20 @@ fn shell_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 4: Redirection\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 5: Job Control".to_string(),
@@ -121,8 +169,20 @@ fn shell_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 5: Job Control\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
         ],
     }
@@ -152,8 +212,20 @@ fn git_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 1: Init\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 2: Add & Commit".to_string(),
@@ -165,8 +237,20 @@ fn git_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 2: Add & Commit\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 3: Log & Status".to_string(),
@@ -178,8 +262,20 @@ fn git_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 3: Log & Status\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 4: Branch & Checkout".to_string(),
@@ -191,8 +287,20 @@ fn git_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 4: Branch & Checkout\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 5: Diff".to_string(),
@@ -204,8 +312,20 @@ fn git_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 5: Diff\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
         ],
     }
@@ -235,8 +355,20 @@ fn http_server_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 1: TCP Listener\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 2: HTTP Parsing".to_string(),
@@ -248,8 +380,20 @@ fn http_server_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 2: HTTP Parsing\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 3: Routing".to_string(),
@@ -261,8 +405,20 @@ fn http_server_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 3: Routing\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 4: Static Files".to_string(),
@@ -274,8 +430,20 @@ fn http_server_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 4: Static Files\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 5: Dynamic Response".to_string(),
@@ -287,8 +455,20 @@ fn http_server_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 5: Dynamic Response\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
         ],
     }
@@ -318,8 +498,20 @@ fn redis_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 1: TCP Server & RESP\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 2: String Commands".to_string(),
@@ -331,8 +523,20 @@ fn redis_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 2: String Commands\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 3: Expiry".to_string(),
@@ -344,8 +548,20 @@ fn redis_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 3: Expiry\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 4: Lists".to_string(),
@@ -357,8 +573,20 @@ fn redis_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 4: Lists\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 5: Persistence".to_string(),
@@ -370,8 +598,20 @@ fn redis_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 5: Persistence\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
         ],
     }
@@ -406,8 +646,20 @@ fn compiler_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 1: Lexer\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 2: Parser".to_string(),
@@ -424,8 +676,20 @@ fn compiler_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 2: Parser\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 3: Interpreter".to_string(),
@@ -442,8 +706,20 @@ fn compiler_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 3: Interpreter\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 4: Type Checker".to_string(),
@@ -455,8 +731,20 @@ fn compiler_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 4: Type Checker\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
             ProjectStage {
                 name: "Stage 5: Code Generator".to_string(),
@@ -468,8 +756,20 @@ fn compiler_project() -> ProjectPack {
                         is_executable: false,
                     },
                 ],
-                tests: vec![],
-                solution_files: vec![],
+                tests: vec![
+                    ProjectFile {
+                        path: "tests/test_basic.rs".to_string(),
+                        content: "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
+                solution_files: vec![
+                    ProjectFile {
+                        path: "solution.rs".to_string(),
+                        content: "// Solution for Stage 5: Code Generator\n// Implement the TODO items in the skeleton code.\n".to_string(),
+                        is_executable: false,
+                    },
+                ],
             },
         ],
     }

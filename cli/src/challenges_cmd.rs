@@ -86,7 +86,7 @@ pub enum LeetcodeAction {
 }
 
 pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
-    let mut engine = ChallengeEngine::new(project_root);
+    let mut engine = ChallengeEngine::new(&project_root.join(".devcore"));
 
     match cmd.action {
         DsaAction::Leetcode(lc_cmd) => return run_leetcode(lc_cmd),
@@ -265,7 +265,7 @@ fn run_leetcode(cmd: LeetcodeCmd) -> Result<()> {
 }
 
 fn run_project(cmd: ProjectCmd, project_root: &Path) -> Result<()> {
-    let data_dir = project_root.join(".devcore").join("projects");
+    let data_dir = project_root.join(".devcore");
     let engine = ProjectEngine::new(&data_dir);
 
     match cmd.action {

@@ -63,6 +63,7 @@ pub struct Deadline {
 
 impl Deadline {
     pub fn upcoming(conn: &Connection, days: i64) -> Result<Vec<Deadline>, rusqlite::Error> {
+        // Uses local timezone for "today" — deadlines are user-facing daily events.
         let today = chrono::Local::now().naive_local().date();
         let cutoff = today + chrono::Duration::days(days);
         let mut stmt = conn.prepare(

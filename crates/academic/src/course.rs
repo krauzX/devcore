@@ -1,3 +1,4 @@
+use devcore_core::DevCoreError;
 use rusqlite::{params, Connection};
 
 #[derive(Debug, Clone)]
@@ -41,10 +42,9 @@ impl Course {
         Ok(())
     }
 
-    pub fn get(conn: &Connection, id: &str) -> Option<Course> {
+    pub fn get(conn: &Connection, id: &str) -> Result<Option<Course>, DevCoreError> {
         let mut stmt = conn
-            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE id = ?1")
-            .ok()?;
+            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE id = ?1")?;
         let mut rows = stmt
             .query_map(params![id], |row| {
                 Ok(Course {
@@ -54,15 +54,13 @@ impl Course {
                     code: row.get(3)?,
                     credits: row.get(4)?,
                 })
-            })
-            .ok()?;
-        rows.next().and_then(|r| r.ok())
+            })?;
+        Ok(rows.next().transpose()?)
     }
 
-    pub fn find_by_code(conn: &Connection, code: &str) -> Option<Course> {
+    pub fn find_by_code(conn: &Connection, code: &str) -> Result<Option<Course>, DevCoreError> {
         let mut stmt = conn
-            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE code = ?1")
-            .ok()?;
+            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE code = ?1")?;
         let mut rows = stmt
             .query_map(params![code], |row| {
                 Ok(Course {
@@ -72,9 +70,8 @@ impl Course {
                     code: row.get(3)?,
                     credits: row.get(4)?,
                 })
-            })
-            .ok()?;
-        rows.next().and_then(|r| r.ok())
+            })?;
+        Ok(rows.next().transpose()?)
     }
 
     pub fn count_for_semester(conn: &Connection, semester_id: &str) -> i32 {

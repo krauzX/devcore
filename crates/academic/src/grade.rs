@@ -32,6 +32,7 @@ const GRADE_THRESHOLDS: &[(f64, &str)] = &[
     (60.0, "B+"),
     (50.0, "B"),
     (40.0, "C"),
+    (30.0, "D"),
 ];
 
 pub fn score_to_grade(obtained: f64, total: f64) -> &'static str {
@@ -154,6 +155,7 @@ mod tests {
         assert_eq!(score_to_grade(65.0, 100.0), "B+");
         assert_eq!(score_to_grade(55.0, 100.0), "B");
         assert_eq!(score_to_grade(45.0, 100.0), "C");
-        assert_eq!(score_to_grade(30.0, 100.0), "F");
+        assert_eq!(score_to_grade(30.0, 100.0), "D");
+        assert_eq!(score_to_grade(20.0, 100.0), "F");
     }
 }

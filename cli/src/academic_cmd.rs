@@ -312,8 +312,12 @@ fn run_grade(
         .ok_or_else(|| anyhow::anyhow!("No current semester set. Use 'set' first."))?;
     let conn = store.conn().map_err(|e| anyhow::anyhow!(e))?;
 
-    let course = Course::find_by_code(&conn, course_code)
+    let course = Course::find_by_code(&conn, course_code)?
         .ok_or_else(|| anyhow::anyhow!("Course '{}' not found", course_code))?;
+
+    if total <= 0.0 {
+        return Err(anyhow::anyhow!("total marks must be positive"));
+    }
 
     let grade_str = score_to_grade(obtained, total);
     let points = devcore_academic::grade_to_points(grade_str);
