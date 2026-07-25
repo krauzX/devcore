@@ -278,10 +278,6 @@ impl LeetCodeClient {
         })
     }
 
-    pub fn fetch_problem_with_meta(&self, title_slug: &str) -> Result<LeetCodeProblem> {
-        self.fetch_problem(title_slug)
-    }
-
     pub fn fetch_daily_challenge(&self) -> Result<LeetCodeProblem> {
         let body = QueryBody {
             query: DAILY_CHALLENGE_QUERY,

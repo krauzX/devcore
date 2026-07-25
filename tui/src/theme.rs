@@ -2,7 +2,7 @@ use ratatui::style::Color;
 
 pub const BASE: Color = Color::Rgb(30, 30, 46);
 pub const SURFACE: Color = Color::Rgb(49, 50, 68);
-pub const OVERLAY: Color = Color::Rgb(69, 71, 90);
+pub const OVERLAY: Color = Color::Rgb(88, 91, 112);
 pub const TEXT: Color = Color::Rgb(205, 214, 244);
 pub const SUBTEXT: Color = Color::Rgb(186, 194, 222);
 pub const BLUE: Color = Color::Rgb(137, 180, 250);

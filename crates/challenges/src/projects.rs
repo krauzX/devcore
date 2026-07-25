@@ -778,7 +778,7 @@ fn compiler_project() -> ProjectPack {
 impl ProjectEngine {
     pub fn new(data_dir: &Path) -> Self {
         let projects_dir = data_dir.join("projects");
-        let _ = fs::create_dir_all(&projects_dir);
+        let _ = fs::create_dir_all(&projects_dir).ok();
         let installed = Self::load_installed_projects(&projects_dir);
         Self {
             builtin: builtin_projects(),

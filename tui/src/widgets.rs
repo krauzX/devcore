@@ -6,6 +6,13 @@ use crate::theme;
 use devcore_academic::UrgencyLevel;
 use devcore_challenges::{Problem, ProjectPack};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StatusKind {
+    Success,
+    Error,
+    Info,
+}
+
 pub struct KeyBinding {
     pub key: &'static str,
     pub label: &'static str,
@@ -105,8 +112,8 @@ pub fn render_input_form(
     values: &[String],
     current_field: usize,
     status_msg: Option<&str>,
+    status_kind: StatusKind,
 ) {
-    let _num_fields = labels.len();
     let mut lines: Vec<Line> = Vec::new();
 
     for (i, (label, value)) in labels.iter().zip(values.iter()).enumerate() {
@@ -120,18 +127,32 @@ pub fn render_input_form(
             Style::default().fg(theme::SUBTEXT)
         };
 
+        let value_span = if is_active {
+            Span::styled(
+                format!("{}|", value),
+                Style::default().fg(theme::TEXT),
+            )
+        } else {
+            Span::styled(value.as_str(), Style::default().fg(theme::TEXT))
+        };
+
         lines.push(Line::from(vec![
             Span::styled(format!("  {} {}: ", marker, label), label_style),
-            Span::styled(value.as_str(), Style::default().fg(theme::TEXT)),
+            value_span,
         ]));
     }
 
     lines.push(Line::from(""));
 
     if let Some(msg) = status_msg {
+        let color = match status_kind {
+            StatusKind::Success => theme::GREEN,
+            StatusKind::Error => theme::RED,
+            StatusKind::Info => theme::YELLOW,
+        };
         lines.push(Line::from(Span::styled(
             format!("  {}", msg),
-            Style::default().fg(theme::RED),
+            Style::default().fg(color),
         )));
     } else {
         lines.push(Line::from(Span::styled(

@@ -18,6 +18,7 @@ use crate::dashboard::render_dashboard;
 use crate::git_tab::render_git_tab;
 use crate::theme;
 use crate::widgets;
+use crate::widgets::StatusKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
@@ -164,7 +165,8 @@ impl App {
             devcore_devtrack::get_progress(&conn).unwrap_or_default()
         };
 
-        let engine = ChallengeEngine::new(project_root);
+        let data_dir = project_root.join(".devcore");
+        let engine = ChallengeEngine::new(&data_dir);
         let packs = engine.list_available().to_vec();
         let installed_count = engine.list_installed().len();
         let installed_pack_ids: Vec<String> = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
@@ -172,7 +174,7 @@ impl App {
         let per_page = 20;
         let offline_result = engine.list_offline(None, 1, per_page);
 
-        let project_engine = ProjectEngine::new(project_root);
+        let project_engine = ProjectEngine::new(&data_dir);
         let projects = project_engine.list_available().to_vec();
 
         Ok(Self {
@@ -235,7 +237,8 @@ impl App {
     }
 
     fn refresh_offline_problems(&mut self, difficulty: Option<&str>, page: usize) {
-        let engine = ChallengeEngine::new(&self.project_root);
+        let data_dir = self.project_root.join(".devcore");
+        let engine = ChallengeEngine::new(&data_dir);
         let per_page = 20;
         let result = engine.list_offline(difficulty, page, per_page);
         self.offline_problems = result.problems;
@@ -245,7 +248,8 @@ impl App {
     }
 
     fn refresh_packs(&mut self) {
-        let engine = ChallengeEngine::new(&self.project_root);
+        let data_dir = self.project_root.join(".devcore");
+        let engine = ChallengeEngine::new(&data_dir);
         self.packs = engine.list_available().to_vec();
         self.installed_count = engine.list_installed().len();
         self.installed_pack_ids = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
@@ -353,7 +357,7 @@ impl App {
                 self.input_mode = InputMode::AddingGrade;
                 self.input_fields = vec![
                     InputField { label: "Course Code", value: String::new() },
-                    InputField { label: "Grade (e.g. O, A+, A, B+, B, C, F)", value: String::new() },
+                    InputField { label: "Grade (e.g. O, A+, A, B+, B, C, D, F)", value: String::new() },
                 ];
                 self.current_field = 0;
                 self.status_msg = None;
@@ -367,10 +371,16 @@ impl App {
                     if idx < self.upcoming_deadlines.len() {
                         let deadline_id = self.upcoming_deadlines[idx].id.clone();
                         if let Ok(conn) = self.academic_store.conn() {
-                            let _ = Deadline::complete(&conn, &deadline_id);
+                            match Deadline::complete(&conn, &deadline_id) {
+                                Ok(()) => {
+                                    self.status_msg = Some("Deadline completed".to_string());
+                                }
+                                Err(e) => {
+                                    self.status_msg = Some(format!("Failed to complete deadline: {}", e));
+                                }
+                            }
                         }
                         self.refresh_deadlines();
-                        self.status_msg = Some("Deadline completed".to_string());
                     }
                 }
             }
@@ -450,10 +460,16 @@ impl App {
                                             code,
                                             credits,
                                         };
-                                        let _ = Course::add(&conn, &course);
-                                        self.course_count = Course::count_for_semester(&conn, &sem.id);
-                                        self.total_credits = Course::total_credits_for_semester(&conn, &sem.id);
-                                        self.status_msg = Some("Course added".into());
+                                        match Course::add(&conn, &course) {
+                                            Ok(()) => {
+                                                self.course_count = Course::count_for_semester(&conn, &sem.id);
+                                                self.total_credits = Course::total_credits_for_semester(&conn, &sem.id);
+                                                self.status_msg = Some("Course added".into());
+                                            }
+                                            Err(e) => {
+                                                self.status_msg = Some(format!("Failed to add course: {}", e));
+                                            }
+                                        }
                                     }
                                 } else {
                                     self.status_msg = Some("No semester selected".into());
@@ -479,9 +495,15 @@ impl App {
                                                 due_date,
                                                 completed: false,
                                             };
-                                            let _ = Deadline::add(&conn, &deadline);
-                                            self.upcoming_deadlines = Deadline::upcoming(&conn, 30).unwrap_or_default();
-                                            self.status_msg = Some("Deadline added".into());
+                                            match Deadline::add(&conn, &deadline) {
+                                                Ok(()) => {
+                                                    self.upcoming_deadlines = Deadline::upcoming(&conn, self.deadline_days as i64).unwrap_or_default();
+                                                    self.status_msg = Some("Deadline added".into());
+                                                }
+                                                Err(e) => {
+                                                    self.status_msg = Some(format!("Failed to add deadline: {}", e));
+                                                }
+                                            }
                                         }
                                     } else {
                                         self.status_msg = Some("No semester selected".into());
@@ -498,7 +520,7 @@ impl App {
                         if self.input_fields.len() >= 2 {
                             let course_code = self.input_fields[0].value.trim().to_string();
                             let grade = self.input_fields[1].value.trim().to_uppercase();
-                            let valid_grades = ["O", "A+", "A", "B+", "B", "C", "F"];
+                            let valid_grades = ["O", "A+", "A", "B+", "B", "C", "D", "F"];
                             if !course_code.is_empty() && valid_grades.contains(&grade.as_str()) {
                                 if let Some(ref sem) = self.current_semester {
                                     if let Ok(conn) = self.academic_store.conn() {
@@ -512,10 +534,16 @@ impl App {
                                                 score: None,
                                                 total: None,
                                             };
-                                            let _ = GradeEntry::add(&conn, &entry);
-                                            self.sgpa = GradeEntry::compute_sgpa(&conn, &sem.id);
-                                            self.cgpa = GradeEntry::compute_cgpa(&conn);
-                                            self.status_msg = Some("Grade added".into());
+                                            match GradeEntry::add(&conn, &entry) {
+                                                Ok(()) => {
+                                                    self.sgpa = GradeEntry::compute_sgpa(&conn, &sem.id);
+                                                    self.cgpa = GradeEntry::compute_cgpa(&conn);
+                                                    self.status_msg = Some("Grade added".into());
+                                                }
+                                                Err(e) => {
+                                                    self.status_msg = Some(format!("Failed to add grade: {}", e));
+                                                }
+                                            }
                                         } else {
                                             self.status_msg = Some("Course not found".into());
                                         }
@@ -524,7 +552,7 @@ impl App {
                                     self.status_msg = Some("No semester selected".into());
                                 }
                             } else {
-                                self.status_msg = Some("Invalid grade (use O, A+, A, B+, B, C, or F)".into());
+                                self.status_msg = Some("Invalid grade (use O, A+, A, B+, B, C, D, or F)".into());
                             }
                         }
                     }
@@ -617,9 +645,15 @@ impl App {
                         let axis = SkillAxis::all()[self.xp_axis_index];
                         let reason = self.xp_reason.clone();
                         if let Ok(conn) = self.core_store.conn() {
-                            if let Ok(updated) = devcore_devtrack::add_xp(&conn, axis, amount, &reason) {
-                                self.skill_progress.retain(|s| s.axis != axis);
-                                self.skill_progress.push(updated);
+                            match devcore_devtrack::add_xp(&conn, axis, amount, &reason) {
+                                Ok(updated) => {
+                                    self.skill_progress.retain(|s| s.axis != axis);
+                                    self.skill_progress.push(updated);
+                                    self.status_msg = Some(format!("Added {} XP to {}", amount, axis.as_str()));
+                                }
+                                Err(e) => {
+                                    self.status_msg = Some(format!("Failed to add XP: {}", e));
+                                }
                             }
                         }
                     }
@@ -750,8 +784,16 @@ impl App {
                 if let Some(idx) = self.selected_pack {
                     if idx < self.packs.len() {
                         let pack_id = self.packs[idx].id.clone();
-                        let mut engine = ChallengeEngine::new(&self.project_root);
-                        let _ = engine.install_pack(&pack_id);
+                        let data_dir = self.project_root.join(".devcore");
+                        let mut engine = ChallengeEngine::new(&data_dir);
+                        match engine.install_pack(&pack_id) {
+                            Ok(()) => {
+                                self.status_msg = Some(format!("Installed pack '{}'", self.packs[idx].name));
+                            }
+                            Err(e) => {
+                                self.status_msg = Some(format!("Failed to install: {}", e));
+                            }
+                        }
                         self.refresh_packs();
                     }
                 }
@@ -770,8 +812,16 @@ impl App {
                 if let Some(idx) = self.selected_pack {
                     if idx < self.packs.len() {
                         let pack_id = self.packs[idx].id.clone();
-                        let mut engine = ChallengeEngine::new(&self.project_root);
-                        let _ = engine.remove_pack(&pack_id);
+                        let data_dir = self.project_root.join(".devcore");
+                        let mut engine = ChallengeEngine::new(&data_dir);
+                        match engine.remove_pack(&pack_id) {
+                            Ok(()) => {
+                                self.status_msg = Some(format!("Removed pack '{}'", self.packs[idx].name));
+                            }
+                            Err(e) => {
+                                self.status_msg = Some(format!("Failed to remove: {}", e));
+                            }
+                        }
                         self.refresh_packs();
                     }
                 }
@@ -878,18 +928,32 @@ impl App {
 
         let keybindings: Vec<widgets::KeyBinding> = match self.input_mode {
             InputMode::Normal => match self.active_tab {
-                Tab::Academic => vec![
-                    widgets::KeyBinding { key: "c", label: "Course", color: theme::GREEN },
-                    widgets::KeyBinding { key: "d", label: "Deadline", color: theme::YELLOW },
-                    widgets::KeyBinding { key: "g", label: "Grade", color: theme::BLUE },
-                    widgets::KeyBinding { key: "s", label: "Semester", color: theme::MAUVE },
-                    widgets::KeyBinding { key: "x", label: "Complete", color: theme::RED },
-                    widgets::KeyBinding { key: "+/-", label: "Window", color: theme::TEAL },
+                Tab::Dashboard => vec![
+                    widgets::KeyBinding { key: "1-4", label: "Tabs", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "j/k", label: "Nav", color: theme::BLUE },
+                    widgets::KeyBinding { key: "x", label: "Complete", color: theme::TEAL },
                     widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
                 ],
-                _ => vec![
-                    widgets::KeyBinding { key: "1-4", label: "Tab", color: theme::MAUVE },
-                    widgets::KeyBinding { key: "Tab", label: "Next", color: theme::BLUE },
+                Tab::Academic => vec![
+                    widgets::KeyBinding { key: "c", label: "Add Course", color: theme::GREEN },
+                    widgets::KeyBinding { key: "d", label: "Add Deadline", color: theme::YELLOW },
+                    widgets::KeyBinding { key: "g", label: "Add Grade", color: theme::BLUE },
+                    widgets::KeyBinding { key: "s", label: "Set Semester", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "j/k", label: "Nav", color: theme::TEAL },
+                    widgets::KeyBinding { key: "x", label: "Complete", color: theme::RED },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+                Tab::Git => vec![
+                    widgets::KeyBinding { key: "x", label: "Add XP", color: theme::GREEN },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+                Tab::Challenges => vec![
+                    widgets::KeyBinding { key: "i", label: "Install", color: theme::GREEN },
+                    widgets::KeyBinding { key: "r", label: "Remove", color: theme::RED },
+                    widgets::KeyBinding { key: "Enter", label: "Detail", color: theme::BLUE },
+                    widgets::KeyBinding { key: "e/m/h/a", label: "Filter", color: theme::YELLOW },
+                    widgets::KeyBinding { key: "o", label: "Projects", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "n/p", label: "Page", color: theme::TEAL },
                     widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
                 ],
             },
@@ -968,6 +1032,13 @@ impl App {
                 };
                 let labels: Vec<&str> = self.input_fields.iter().map(|f| f.label).collect();
                 let values: Vec<String> = self.input_fields.iter().map(|f| f.value.clone()).collect();
+                let status_kind = match self.status_msg.as_deref() {
+                    Some(msg) if msg.starts_with("Course added")
+                        || msg.starts_with("Deadline added")
+                        || msg.starts_with("Grade added") => StatusKind::Success,
+                    Some(_) => StatusKind::Error,
+                    None => StatusKind::Info,
+                };
                 widgets::render_input_form(
                     frame,
                     area,
@@ -976,6 +1047,7 @@ impl App {
                     &values,
                     self.current_field,
                     self.status_msg.as_deref(),
+                    status_kind,
                 );
             }
             InputMode::SelectingSemester => {

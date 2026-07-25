@@ -55,6 +55,25 @@ fn is_pack_installed(app: &App, pack_id: &str) -> bool {
 }
 
 fn render_packs_panel(frame: &mut Frame, area: Rect, app: &App) {
+    let block = Block::default()
+        .title(format!(" Packs ({}) [i]nstall [r]emove ", app.packs.len()))
+        .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme::OVERLAY))
+        .style(Style::default().bg(theme::SURFACE));
+
+    if app.packs.is_empty() {
+        frame.render_widget(
+            ratatui::widgets::Paragraph::new("No packs available")
+                .style(Style::default().fg(theme::OVERLAY))
+                .alignment(Alignment::Center)
+                .block(block),
+            area,
+        );
+        return;
+    }
+
     let header = Row::new(vec![
         Cell::from(Span::styled("Status", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Difficulty", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
@@ -84,15 +103,7 @@ fn render_packs_panel(frame: &mut Frame, area: Rect, app: &App) {
 
     frame.render_widget(Table::new(rows, [
         Constraint::Length(8), Constraint::Length(10), Constraint::Min(15), Constraint::Length(10),
-    ]).header(header).block(
-        Block::default()
-            .title(format!(" Packs ({}) [i]nstall [r]emove ", app.packs.len()))
-            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
-            .border_type(BorderType::Rounded)
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(theme::OVERLAY))
-            .style(Style::default().bg(theme::SURFACE)),
-    ).column_spacing(1), area);
+    ]).header(header).block(block).column_spacing(1), area);
 }
 
 fn render_problems_panel(frame: &mut Frame, area: Rect, app: &App) {
@@ -123,6 +134,38 @@ fn render_problems_panel(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_offline_problems(frame: &mut Frame, area: Rect, app: &App) {
+    let filter_label = match app.difficulty_filter {
+        Some(Difficulty::Easy) => " [Easy] ",
+        Some(Difficulty::Medium) => " [Medium] ",
+        Some(Difficulty::Hard) => " [Hard] ",
+        None => " [All] ",
+    };
+
+    let title = format!(
+        " Offline Problems {} — Page {}/{} ({} total) [e]asy [m]edium [h]ard [a]ll ",
+        filter_label,
+        app.offline_page, app.offline_total_pages, app.offline_total
+    );
+
+    let block = Block::default()
+        .title(title)
+        .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme::OVERLAY))
+        .style(Style::default().bg(theme::SURFACE));
+
+    if app.offline_problems.is_empty() {
+        frame.render_widget(
+            ratatui::widgets::Paragraph::new("No problems found")
+                .style(Style::default().fg(theme::OVERLAY))
+                .alignment(Alignment::Center)
+                .block(block),
+            area,
+        );
+        return;
+    }
+
     let header = Row::new(vec![
         Cell::from(Span::styled("ID", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Title", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
@@ -140,33 +183,31 @@ fn render_offline_problems(frame: &mut Frame, area: Rect, app: &App) {
         ])
     }).collect();
 
-    let filter_label = match app.difficulty_filter {
-        Some(Difficulty::Easy) => " [Easy] ",
-        Some(Difficulty::Medium) => " [Medium] ",
-        Some(Difficulty::Hard) => " [Hard] ",
-        None => " [All] ",
-    };
-
-    let title = format!(
-        " Offline Problems {} — Page {}/{} ({} total) [e]asy [m]edium [h]ard [a]ll ",
-        filter_label,
-        app.offline_page, app.offline_total_pages, app.offline_total
-    );
-
     frame.render_widget(Table::new(rows, [
         Constraint::Length(6), Constraint::Min(20), Constraint::Length(10), Constraint::Length(10),
-    ]).header(header).block(
-        Block::default()
-            .title(title)
-            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
-            .border_type(BorderType::Rounded)
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(theme::OVERLAY))
-            .style(Style::default().bg(theme::SURFACE)),
-    ).column_spacing(1), area);
+    ]).header(header).block(block).column_spacing(1), area);
 }
 
 fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
+    let block = Block::default()
+        .title(format!(" Projects ({}) [o] toggle back ", app.projects.len()))
+        .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme::OVERLAY))
+        .style(Style::default().bg(theme::SURFACE));
+
+    if app.projects.is_empty() {
+        frame.render_widget(
+            ratatui::widgets::Paragraph::new("No projects available")
+                .style(Style::default().fg(theme::OVERLAY))
+                .alignment(Alignment::Center)
+                .block(block),
+            area,
+        );
+        return;
+    }
+
     let header = Row::new(vec![
         Cell::from(Span::styled("Difficulty", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
         Cell::from(Span::styled("Project Name", Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))),
@@ -205,13 +246,5 @@ fn render_project_list(frame: &mut Frame, area: Rect, app: &App) {
 
     frame.render_widget(Table::new(rows, [
         Constraint::Length(10), Constraint::Min(20), Constraint::Length(10), Constraint::Length(8),
-    ]).header(header).block(
-        Block::default()
-            .title(format!(" Projects ({}) [o] toggle back ", app.projects.len()))
-            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
-            .border_type(BorderType::Rounded)
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(theme::OVERLAY))
-            .style(Style::default().bg(theme::SURFACE)),
-    ).column_spacing(1), area);
+    ]).header(header).block(block).column_spacing(1), area);
 }

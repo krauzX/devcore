@@ -141,7 +141,7 @@ static OFFLINE_PROBLEMS: Lazy<Vec<OfflineProblem>> = Lazy::new(|| {
 impl ChallengeEngine {
     pub fn new(data_dir: &Path) -> Self {
         let packs_dir = data_dir.join("challenges").join("packs");
-        let _ = fs::create_dir_all(&packs_dir);
+        let _ = fs::create_dir_all(&packs_dir).ok();
         let installed = Self::load_installed_packs(&packs_dir);
         Self {
             builtin: builtin_packs(),

@@ -254,7 +254,7 @@ fn run_leetcode(cmd: LeetcodeCmd) -> Result<()> {
             );
         }
         LeetcodeAction::Show { title_slug } => {
-            let problem = client.fetch_problem_with_meta(&title_slug)?;
+            let problem = client.fetch_problem(&title_slug)?;
             println!(
                 "{}",
                 devcore_challenges::leetcode::format_problem(&problem)

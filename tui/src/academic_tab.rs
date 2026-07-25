@@ -90,6 +90,29 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_semester_panel(frame: &mut Frame, area: Rect, app: &App) {
+    let block = Block::default()
+        .title(" Semesters ")
+        .title_style(
+            Style::default()
+                .fg(theme::BLUE)
+                .add_modifier(Modifier::BOLD),
+        )
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme::OVERLAY))
+        .style(Style::default().bg(theme::SURFACE));
+
+    if app.semesters.is_empty() {
+        frame.render_widget(
+            Paragraph::new("No semesters yet. Press 's' to select one.")
+                .style(Style::default().fg(theme::OVERLAY))
+                .alignment(Alignment::Center)
+                .block(block),
+            area,
+        );
+        return;
+    }
+
     let items: Vec<ListItem> = app
         .semesters
         .iter()
@@ -109,22 +132,7 @@ fn render_semester_panel(frame: &mut Frame, area: Rect, app: &App) {
         })
         .collect();
 
-    frame.render_widget(
-        List::new(items).block(
-            Block::default()
-                .title(" Semesters ")
-                .title_style(
-                    Style::default()
-                        .fg(theme::BLUE)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .border_type(BorderType::Rounded)
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(theme::OVERLAY))
-                .style(Style::default().bg(theme::SURFACE)),
-        ),
-        area,
-    );
+    frame.render_widget(List::new(items).block(block), area);
 }
 
 fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
