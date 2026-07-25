@@ -1,0 +1,140 @@
+{
+  "id": "build-your-own-database",
+  "name": "Build Your Own Database",
+  "description": "Implement a simple key-value database with B-tree indexing, query parsing, transactions, and a network protocol.",
+  "difficulty": "hard",
+  "language": "rust",
+  "readme": "# Build Your Own Database\n\nBuild a simple database engine in Rust.\n\n## Stages\n\n1. Key-Value Store: Implement an in-memory HashMap-based key-value store with basic GET/SET/DEL operations\n2. B-Tree Index: Replace the HashMap with a B-tree for ordered key storage and range queries\n3. Query Parser: Parse SQL-like query strings (SELECT, INSERT, DELETE) into an AST\n4. Transaction Support: Add begin/commit/rollback with MVCC or WAL-based concurrency\n5. Network Protocol: Expose the database over TCP with a simple wire protocol\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.\n\nRun `cargo test` after implementing each stage.",
+  "stages": [
+    {
+      "name": "Stage 1: Key-Value Store",
+      "description": "Implement an in-memory key-value store with GET, SET, DEL, and basic persistence to disk.",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-database\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"mydb\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/store.rs",
+          "content": "use std::collections::HashMap;\nuse std::fs;\nuse std::path::Path;\n\npub struct KvStore {\n    data: HashMap<String, String>,\n    wal_path: String,\n}\n\nimpl KvStore {\n    pub fn new(path: &str) -> Self {\n        // TODO: create store, load existing data from WAL file if present\n        KvStore {\n            data: HashMap::new(),\n            wal_path: path.to_string(),\n        }\n    }\n\n    pub fn get(&self, key: &str) -> Option<&str> {\n        self.data.get(key).map(|s| s.as_str())\n    }\n\n    pub fn set(&mut self, key: &str, value: &str) {\n        // TODO: insert into HashMap and append to WAL file\n        todo!(\"implement set with WAL\")\n    }\n\n    pub fn del(&mut self, key: &str) -> bool {\n        // TODO: remove from HashMap and append delete marker to WAL\n        todo!(\"implement delete with WAL\")\n    }\n\n    pub fn flush(&self) -> std::io::Result<()> {\n        // TODO: write all data to a snapshot file\n        todo!(\"implement flush\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_store.rs",
+          "content": "use my_database::store::KvStore;\n\n#[test]\nfn test_set_and_get() {\n    let mut store = KvStore::new(\"/tmp/test_db_1\");\n    store.set(\"key1\", \"value1\");\n    assert_eq!(store.get(\"key1\"), Some(\"value1\"));\n}\n\n#[test]\nfn test_get_missing() {\n    let store = KvStore::new(\"/tmp/test_db_2\");\n    assert_eq!(store.get(\"missing\"), None);\n}\n\n#[test]\nfn test_delete() {\n    let mut store = KvStore::new(\"/tmp/test_db_3\");\n    store.set(\"key1\", \"value1\");\n    assert!(store.del(\"key1\"));\n    assert_eq!(store.get(\"key1\"), None);\n}\n\n#[test]\nfn test_overwrite() {\n    let mut store = KvStore::new(\"/tmp/test_db_4\");\n    store.set(\"key1\", \"old\");\n    store.set(\"key1\", \"new\");\n    assert_eq!(store.get(\"key1\"), Some(\"new\"));\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/store.rs",
+          "content": "use std::collections::HashMap;\nuse std::fs::{self, OpenOptions};\nuse std::io::Write;\n\npub struct KvStore {\n    data: HashMap<String, String>,\n    wal_path: String,\n}\n\nimpl KvStore {\n    pub fn new(path: &str) -> Self {\n        let mut store = KvStore {\n            data: HashMap::new(),\n            wal_path: format!(\"{}.wal\", path),\n        };\n        let _ = store.load_wal();\n        store\n    }\n\n    fn load_wal(&mut self) -> std::io::Result<()> {\n        let content = fs::read_to_string(&self.wal_path)?;\n        for line in content.lines() {\n            let parts: Vec<&str> = line.splitn(3, ' ').collect();\n            if parts.len() >= 2 {\n                match parts[0] {\n                    \"SET\" => { if parts.len() == 3 { self.data.insert(parts[1].to_string(), parts[2].to_string()); } }\n                    \"DEL\" => { self.data.remove(parts[1]); }\n                    _ => {}\n                }\n            }\n        }\n        Ok(())\n    }\n\n    pub fn get(&self, key: &str) -> Option<&str> {\n        self.data.get(key).map(|s| s.as_str())\n    }\n\n    pub fn set(&mut self, key: &str, value: &str) {\n        self.data.insert(key.to_string(), value.to_string());\n        let mut file = OpenOptions::new().create(true).append(true).open(&self.wal_path).unwrap();\n        writeln!(file, \"SET {} {}\", key, value).unwrap();\n    }\n\n    pub fn del(&mut self, key: &str) -> bool {\n        let existed = self.data.remove(key).is_some();\n        let mut file = OpenOptions::new().create(true).append(true).open(&self.wal_path).unwrap();\n        writeln!(file, \"DEL {}\", key).unwrap();\n        existed\n    }\n\n    pub fn flush(&self) -> std::io::Result<()> {\n        let mut content = String::new();\n        for (k, v) in &self.data {\n            content.push_str(&format!(\"SET {} {}\\\n\", k, v));\n        }\n        fs::write(&self.wal_path, content)\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: B-Tree Index",
+      "description": "Replace the HashMap with a B-tree for ordered key storage and range queries.",
+      "files": [
+        {
+          "path": "src/btree.rs",
+          "content": "const MAX_KEYS: usize = 3;\n\n#[derive(Debug, Clone)]\npub struct BTreeNode {\n    pub keys: Vec<String>,\n    pub values: Vec<String>,\n    pub children: Vec<BTreeNode>,\n    pub is_leaf: bool,\n}\n\nimpl BTreeNode {\n    pub fn new(is_leaf: bool) -> Self {\n        BTreeNode {\n            keys: Vec::new(),\n            values: Vec::new(),\n            children: Vec::new(),\n            is_leaf,\n        }\n    }\n}\n\npub struct BTree {\n    root: BTreeNode,\n}\n\nimpl BTree {\n    pub fn new() -> Self {\n        BTree { root: BTreeNode::new(true) }\n    }\n\n    pub fn insert(&mut self, key: &str, value: &str) {\n        // TODO: insert key-value pair, splitting nodes when full\n        todo!(\"implement B-tree insert\")\n    }\n\n    pub fn search(&self, key: &str) -> Option<&str> {\n        // TODO: search for a key in the B-tree\n        todo!(\"implement B-tree search\")\n    }\n\n    pub fn range(&self, start: &str, end: &str) -> Vec<(&str, &str)> {\n        // TODO: return all key-value pairs where start <= key <= end\n        todo!(\"implement range query\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_btree.rs",
+          "content": "use my_database::btree::BTree;\n\n#[test]\nfn test_insert_and_search() {\n    let mut tree = BTree::new();\n    tree.insert(\"apple\", \"red\");\n    tree.insert(\"banana\", \"yellow\");\n    assert_eq!(tree.search(\"apple\"), Some(\"red\"));\n    assert_eq!(tree.search(\"banana\"), Some(\"yellow\"));\n}\n\n#[test]\nfn test_search_missing() {\n    let tree = BTree::new();\n    assert_eq!(tree.search(\"missing\"), None);\n}\n\n#[test]\nfn test_range_query() {\n    let mut tree = BTree::new();\n    tree.insert(\"a\", \"1\");\n    tree.insert(\"b\", \"2\");\n    tree.insert(\"c\", \"3\");\n    tree.insert(\"d\", \"4\");\n    let results = tree.range(\"b\", \"d\");\n    assert_eq!(results.len(), 3);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/btree.rs",
+          "content": "const MAX_KEYS: usize = 3;\n\n#[derive(Debug, Clone)]\npub struct BTreeNode {\n    pub keys: Vec<String>,\n    pub values: Vec<String>,\n    pub children: Vec<BTreeNode>,\n    pub is_leaf: bool,\n}\n\nimpl BTreeNode {\n    fn new(is_leaf: bool) -> Self {\n        BTreeNode { keys: Vec::new(), values: Vec::new(), children: Vec::new(), is_leaf }\n    }\n}\n\npub struct BTree { root: BTreeNode }\n\nimpl BTree {\n    pub fn new() -> Self { BTree { root: BTreeNode::new(true) } }\n    pub fn insert(&mut self, key: &str, value: &str) {\n        if self.root.keys.len() == MAX_KEYS {\n            let mut new_root = BTreeNode::new(false);\n            let old_root = std::mem::replace(&mut self.root, BTreeNode::new(false));\n            new_root.children.push(old_root);\n            self.split_child(&mut new_root, 0);\n            self.root = new_root;\n        }\n        self.insert_non_full(&mut self.root, key, value);\n    }\n    fn split_child(&self, parent: &mut BTreeNode, idx: usize) {\n        let mid = MAX_KEYS / 2;\n        let mut child = parent.children[idx].clone();\n        let mut right = BTreeNode::new(child.is_leaf);\n        right.keys = child.keys.split_off(mid + 1);\n        right.values = child.values.split_off(mid + 1);\n        if !child.is_leaf {\n            right.children = child.children.split_off(mid + 1);\n        }\n        let mid_key = child.keys.pop().unwrap();\n        let mid_val = child.values.pop().unwrap();\n        parent.keys.insert(idx, mid_key);\n        parent.values.insert(idx, mid_val);\n        parent.children.insert(idx + 1, right);\n    }\n    fn insert_non_full(&self, node: &mut BTreeNode, key: &str, value: &str) {\n        let mut i = node.keys.len();\n        if node.is_leaf {\n            node.keys.push(String::new());\n            node.values.push(String::new());\n            while i > 0 && key < node.keys[i - 1].as_str() {\n                node.keys[i] = node.keys[i - 1].clone();\n                node.values[i] = node.values[i - 1].clone();\n                i -= 1;\n            }\n            node.keys[i] = key.to_string();\n            node.values[i] = value.to_string();\n        } else {\n            while i > 0 && key < node.keys[i - 1].as_str() { i -= 1; }\n            if node.children[i].keys.len() == MAX_KEYS {\n                self.split_child(node, i);\n                if key > node.keys[i].as_str() { i += 1; }\n            }\n            self.insert_non_full(&mut node.children[i], key, value);\n        }\n    }\n    pub fn search(&self, key: &str) -> Option<&str> {\n        self.search_node(&self.root, key)\n    }\n    fn search_node<'a>(&'a self, node: &'a BTreeNode, key: &str) -> Option<&'a str> {\n        let mut i = 0;\n        while i < node.keys.len() {\n            if key == node.keys[i].as_str() { return Some(&node.values[i]); }\n            if key < node.keys[i].as_str() { break; }\n            i += 1;\n        }\n        if node.is_leaf { None } else { self.search_node(&node.children[i], key) }\n    }\n    pub fn range(&self, start: &str, end: &str) -> Vec<(&str, &str)> {\n        let mut result = Vec::new();\n        self.range_collect(&self.root, start, end, &mut result);\n        result\n    }\n    fn range_collect<'a>(&'a self, node: &'a BTreeNode, start: &str, end: &str, result: &mut Vec<(&'a str, &'a str)>) {\n        for i in 0..node.keys.len() {\n            if !node.is_leaf { self.range_collect(&node.children[i], start, end, result); }\n            if node.keys[i].as_str() >= start && node.keys[i].as_str() <= end {\n                result.push((&node.keys[i], &node.values[i]));\n            }\n        }\n        if !node.is_empty() { self.range_collect(node.children.last().unwrap(), start, end, result); }\n    }\n}\n\nimpl BTreeNode {\n    fn is_empty(&self) -> bool { self.keys.is_empty() }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Query Parser",
+      "description": "Parse SQL-like query strings (SELECT, INSERT, DELETE) into an AST for execution.",
+      "files": [
+        {
+          "path": "src/query.rs",
+          "content": "#[derive(Debug, Clone, PartialEq)]\npub enum Query {\n    Insert { key: String, value: String },\n    Select { key: Option<String>, range: Option<(String, String)> },\n    Delete { key: String },\n}\n\npub struct QueryParser {\n    input: Vec<char>,\n    pos: usize,\n}\n\nimpl QueryParser {\n    pub fn new(input: &str) -> Self {\n        QueryParser {\n            input: input.chars().collect(),\n            pos: 0,\n        }\n    }\n\n    pub fn parse(&mut self) -> Result<Query, String> {\n        self.skip_whitespace();\n        let keyword = self.read_word().to_uppercase();\n        match keyword.as_str() {\n            \"INSERT\" => {\n                // TODO: parse INSERT key value\n                todo!(\"parse INSERT query\")\n            }\n            \"SELECT\" => {\n                // TODO: parse SELECT key or SELECT range\n                todo!(\"parse SELECT query\")\n            }\n            \"DELETE\" => {\n                // TODO: parse DELETE key\n                todo!(\"parse DELETE query\")\n            }\n            _ => Err(format!(\"Unknown keyword: {}\", keyword)),\n        }\n    }\n\n    fn skip_whitespace(&mut self) {\n        while self.pos < self.input.len() && self.input[self.pos].is_whitespace() { self.pos += 1; }\n    }\n    fn read_word(&mut self) -> String {\n        let start = self.pos;\n        while self.pos < self.input.len() && !self.input[self.pos].is_whitespace() { self.pos += 1; }\n        self.input[start..self.pos].iter().collect()\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_query.rs",
+          "content": "use my_database::query::{Query, QueryParser};\n\n#[test]\nfn test_parse_insert() {\n    let mut parser = QueryParser::new(\"INSERT mykey myvalue\");\n    let query = parser.parse().unwrap();\n    assert_eq!(query, Query::Insert { key: \"mykey\".to_string(), value: \"myvalue\".to_string() });\n}\n\n#[test]\nfn test_parse_select_key() {\n    let mut parser = QueryParser::new(\"SELECT mykey\");\n    let query = parser.parse().unwrap();\n    assert_eq!(query, Query::Select { key: Some(\"mykey\".to_string()), range: None });\n}\n\n#[test]\nfn test_parse_delete() {\n    let mut parser = QueryParser::new(\"DELETE mykey\");\n    let query = parser.parse().unwrap();\n    assert_eq!(query, Query::Delete { key: \"mykey\".to_string() });\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/query.rs",
+          "content": "#[derive(Debug, Clone, PartialEq)]\npub enum Query {\n    Insert { key: String, value: String },\n    Select { key: Option<String>, range: Option<(String, String)> },\n    Delete { key: String },\n}\n\npub struct QueryParser {\n    input: Vec<char>,\n    pos: usize,\n}\n\nimpl QueryParser {\n    pub fn new(input: &str) -> Self { QueryParser { input: input.chars().collect(), pos: 0 } }\n    pub fn parse(&mut self) -> Result<Query, String> {\n        self.skip_whitespace();\n        let keyword = self.read_word().to_uppercase();\n        match keyword.as_str() {\n            \"INSERT\" => {\n                self.skip_whitespace();\n                let key = self.read_word();\n                self.skip_whitespace();\n                let value = self.read_word();\n                Ok(Query::Insert { key, value })\n            }\n            \"SELECT\" => {\n                self.skip_whitespace();\n                if self.pos >= self.input.len() {\n                    Ok(Query::Select { key: None, range: None })\n                } else {\n                    let word = self.read_word();\n                    self.skip_whitespace();\n                    if self.pos < self.input.len() {\n                        let word2 = self.read_word();\n                        Ok(Query::Select { key: None, range: Some((word, word2)) })\n                    } else {\n                        Ok(Query::Select { key: Some(word), range: None })\n                    }\n                }\n            }\n            \"DELETE\" => {\n                self.skip_whitespace();\n                let key = self.read_word();\n                Ok(Query::Delete { key })\n            }\n            _ => Err(format!(\"Unknown keyword: {}\", keyword)),\n        }\n    }\n    fn skip_whitespace(&mut self) {\n        while self.pos < self.input.len() && self.input[self.pos].is_whitespace() { self.pos += 1; }\n    }\n    fn read_word(&mut self) -> String {\n        let start = self.pos;\n        while self.pos < self.input.len() && !self.input[self.pos].is_whitespace() { self.pos += 1; }\n        self.input[start..self.pos].iter().collect()\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Transaction Support",
+      "description": "Add begin/commit/rollback with snapshot isolation for concurrent-safe operations.",
+      "files": [
+        {
+          "path": "src/transaction.rs",
+          "content": "use std::collections::HashMap;\n\n#[derive(Debug, Clone)]\npub enum TxState {\n    Active,\n    Committed,\n    Aborted,\n}\n\npub struct Transaction {\n    pub id: u64,\n    pub state: TxState,\n    pub writes: HashMap<String, Option<String>>,  // None = delete marker\n}\n\npub struct TransactionManager {\n    store: HashMap<String, String>,\n    transactions: Vec<Transaction>,\n    next_id: u64,\n}\n\nimpl TransactionManager {\n    pub fn new() -> Self {\n        TransactionManager {\n            store: HashMap::new(),\n            transactions: Vec::new(),\n            next_id: 1,\n        }\n    }\n\n    pub fn begin(&mut self) -> u64 {\n        // TODO: create a new transaction with a unique ID\n        todo!(\"implement begin transaction\")\n    }\n\n    pub fn set(&mut self, tx_id: u64, key: &str, value: &str) -> Result<(), String> {\n        // TODO: write to the active transaction's write set\n        todo!(\"implement transactional set\")\n    }\n\n    pub fn get(&self, tx_id: u64, key: &str) -> Option<String> {\n        // TODO: read from transaction's write set first, then from store\n        todo!(\"implement transactional get\")\n    }\n\n    pub fn commit(&mut self, tx_id: u64) -> Result<(), String> {\n        // TODO: apply all writes from transaction to the main store\n        todo!(\"implement commit\")\n    }\n\n    pub fn rollback(&mut self, tx_id: u64) -> Result<(), String> {\n        // TODO: discard all writes from the transaction\n        todo!(\"implement rollback\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_transaction.rs",
+          "content": "use my_database::transaction::TransactionManager;\n\n#[test]\nfn test_basic_transaction() {\n    let mut tm = TransactionManager::new();\n    let tx = tm.begin();\n    tm.set(tx, \"key1\", \"value1\").unwrap();\n    assert_eq!(tm.get(tx, \"key1\"), Some(\"value1\".to_string()));\n    tm.commit(tx).unwrap();\n    assert_eq!(tm.get(tx, \"key1\"), Some(\"value1\".to_string()));\n}\n\n#[test]\nfn test_rollback() {\n    let mut tm = TransactionManager::new();\n    let tx = tm.begin();\n    tm.set(tx, \"key1\", \"value1\").unwrap();\n    tm.rollback(tx).unwrap();\n    assert_eq!(tm.get(tx, \"key1\"), None);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/transaction.rs",
+          "content": "use std::collections::HashMap;\n\n#[derive(Debug, Clone)]\npub enum TxState { Active, Committed, Aborted }\n\npub struct Transaction {\n    pub id: u64,\n    pub state: TxState,\n    pub writes: HashMap<String, Option<String>>,\n}\n\npub struct TransactionManager {\n    store: HashMap<String, String>,\n    transactions: Vec<Transaction>,\n    next_id: u64,\n}\n\nimpl TransactionManager {\n    pub fn new() -> Self {\n        TransactionManager { store: HashMap::new(), transactions: Vec::new(), next_id: 1 }\n    }\n    pub fn begin(&mut self) -> u64 {\n        let id = self.next_id;\n        self.next_id += 1;\n        self.transactions.push(Transaction {\n            id,\n            state: TxState::Active,\n            writes: HashMap::new(),\n        });\n        id\n    }\n    fn find_tx_mut(&mut self, id: u64) -> Option<&mut Transaction> {\n        self.transactions.iter_mut().find(|t| t.id == id && matches!(t.state, TxState::Active))\n    }\n    pub fn set(&mut self, tx_id: u64, key: &str, value: &str) -> Result<(), String> {\n        let tx = self.find_tx_mut(tx_id).ok_or(\"Transaction not active\")?;\n        tx.writes.insert(key.to_string(), Some(value.to_string()));\n        Ok(())\n    }\n    pub fn get(&self, tx_id: u64, key: &str) -> Option<String> {\n        if let Some(tx) = self.transactions.iter().find(|t| t.id == tx_id && matches!(t.state, TxState::Active)) {\n            if let Some(v) = tx.writes.get(key) { return v.clone(); }\n        }\n        self.store.get(key).cloned()\n    }\n    pub fn commit(&mut self, tx_id: u64) -> Result<(), String> {\n        let tx = self.transactions.iter_mut().find(|t| t.id == tx_id).ok_or(\"Transaction not found\")?;\n        let writes = std::mem::take(&mut tx.writes);\n        tx.state = TxState::Committed;\n        for (k, v) in writes {\n            match v {\n                Some(val) => { self.store.insert(k, val); }\n                None => { self.store.remove(&k); }\n            }\n        }\n        Ok(())\n    }\n    pub fn rollback(&mut self, tx_id: u64) -> Result<(), String> {\n        let tx = self.transactions.iter_mut().find(|t| t.id == tx_id).ok_or(\"Transaction not found\")?;\n        tx.writes.clear();\n        tx.state = TxState::Aborted;\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Network Protocol",
+      "description": "Expose the database over TCP with a simple text-based wire protocol.",
+      "files": [
+        {
+          "path": "src/server.rs",
+          "content": "use std::io::{BufRead, BufReader, Write};\nuse std::net::{TcpListener, TcpStream};\n\nuse crate::store::KvStore;\nuse crate::transaction::TransactionManager;\n\npub struct Server {\n    tm: TransactionManager,\n}\n\nimpl Server {\n    pub fn new() -> Self {\n        Server {\n            tm: TransactionManager::new(),\n        }\n    }\n\n    pub fn start(&self, addr: &str) -> std::io::Result<()> {\n        let listener = TcpListener::bind(addr)?;\n        println!(\"Database server listening on {}\", addr);\n        for stream in listener.incoming().flatten() {\n            // TODO: handle each connection in a thread\n            self.handle_client(stream);\n        }\n        Ok(())\n    }\n\n    fn handle_client(&self, stream: TcpStream) {\n        let mut reader = BufReader::new(&stream);\n        let mut writer = stream;\n        // TODO: read lines, parse commands, execute, and respond\n        // Protocol:\n        //   SET key value => +OK\r\n        //   GET key => $value\r\n        //   DEL key => +OK or -NOTFOUND\r\n        //   PING => +PONG\r\n        //   QUIT => close\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_server.rs",
+          "content": "use std::io::{Read, Write};\nuse std::net::TcpStream;\nuse std::thread;\nuse std::time::Duration;\nuse my_database::server::Server;\n\n#[test]\nfn test_ping_pong() {\n    let server = Server::new();\n    thread::spawn(move || { server.start(\"127.0.0.1:9999\").ok(); });\n    thread::sleep(Duration::from_millis(100));\n    let mut stream = TcpStream::connect(\"127.0.0.1:9999\").unwrap();\n    stream.write_all(b\"PING\\\r\\\n\").unwrap();\n    let mut buf = [0u8; 1024];\n    let n = stream.read(&mut buf).unwrap();\n    let response = String::from_utf8_lossy(&buf[..n]);\n    assert!(response.contains(\"PONG\"));\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/server.rs",
+          "content": "use std::io::{BufRead, BufReader, Write};\nuse std::net::{TcpListener, TcpStream};\nuse std::thread;\n\nuse crate::transaction::TransactionManager;\n\npub struct Server {\n    tm: TransactionManager,\n}\n\nimpl Server {\n    pub fn new() -> Self { Server { tm: TransactionManager::new() } }\n    pub fn start(&self, addr: &str) -> std::io::Result<()> {\n        let listener = TcpListener::bind(addr)?;\n        for stream in listener.incoming().flatten() {\n            let tm = TransactionManager::new();\n            thread::spawn(move || {\n                let mut srv = Server { tm };\n                srv.handle_client(stream);\n            });\n        }\n        Ok(())\n    }\n    fn handle_client(&mut self, stream: TcpStream) {\n        let mut reader = BufReader::new(&stream.try_clone().unwrap());\n        let mut writer = stream;\n        loop {\n            let mut line = String::new();\n            match reader.read_line(&mut line) {\n                Ok(0) => break,\n                Ok(_) => {\n                    let line = line.trim();\n                    let response = self.process_command(line);\n                    writer.write_all(response.as_bytes()).ok();\n                    writer.flush().ok();\n                }\n                Err(_) => break,\n            }\n        }\n    }\n    fn process_command(&mut self, line: &str) -> String {\n        let parts: Vec<&str> = line.split_whitespace().collect();\n        if parts.is_empty() { return \"-ERR empty command\\\r\\\n\".to_string(); }\n        match parts[0].to_uppercase().as_str() {\n            \"PING\" => \"+PONG\\\r\\\n\".to_string(),\n            \"SET\" if parts.len() == 3 => {\n                let tx = self.tm.begin();\n                self.tm.set(tx, parts[1], parts[2]).ok();\n                self.tm.commit(tx).ok();\n                \"+OK\\\r\\\n\".to_string()\n            }\n            \"GET\" if parts.len() == 2 => {\n                let tx = self.tm.begin();\n                match self.tm.get(tx, parts[1]) {\n                    Some(v) => format!(\"${}\\\r\\\n{}\\\r\\\n\", v.len(), v),\n                    None => \"$-1\\\r\\\n\".to_string(),\n                }\n            }\n            \"DEL\" if parts.len() == 2 => {\n                let tx = self.tm.begin();\n                self.tm.set(tx, parts[1], \"\").ok();\n                self.tm.commit(tx).ok();\n                \"+OK\\\r\\\n\".to_string()\n            }\n            _ => \"-ERR unknown command\\\r\\\n\".to_string(),\n        }\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

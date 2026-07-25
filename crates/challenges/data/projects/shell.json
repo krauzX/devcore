@@ -1,0 +1,140 @@
+{
+  "id": "build-your-own-shell",
+  "name": "Build Your Own Shell",
+  "description": "Implement a Unix-like shell with command execution, piping, and built-in commands.",
+  "difficulty": "medium",
+  "language": "rust",
+  "readme": "# Build Your Own Shell\n\nImplement a minimal Unix shell in Rust.\n\n## Stages\n\n1. Basic REPL: Read input, parse commands, execute external programs\n2. Built-ins: Implement cd, exit, echo, type\n3. Piping: Support | to chain commands\n4. Redirection: Support > and < for file I/O\n5. Job Control: Background processes with &\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1 and work your way up.\n\nRun tests with cargo test after implementing each stage.",
+  "stages": [
+    {
+      "name": "Stage 1: Basic REPL",
+      "description": "Parse user input and execute external commands using std::process::Command.",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-shell\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"shell\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/main.rs",
+          "content": "use std::io::{self, Write};\n\nfn main() {\n    let stdin = io::stdin();\n    loop {\n        io::stdout().write_all(b\"$ \").unwrap();\n        io::stdout().flush().unwrap();\n        let mut input = String::new();\n        match stdin.read_line(&mut input) {\n            Ok(0) => break,\n            Ok(_) => {\n                let input = input.trim();\n                if input.is_empty() {\n                    continue;\n                }\n                execute_command(input);\n            }\n            Err(e) => {\n                eprintln!(\"Error reading input: {}\", e);\n                break;\n            }\n        }\n    }\n}\n\nfn execute_command(input: &str) {\n    let parts: Vec<&str> = input.split_whitespace().collect();\n    if parts.is_empty() {\n        return;\n    }\n    let program = parts[0];\n    let args = &parts[1..];\n    let _ = std::process::Command::new(program)\n        .args(args)\n        .status();\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_echo() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution: Execute external commands using std::process::Command\n// Complete the execute_command function to spawn child processes.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: Built-ins",
+      "description": "Implement cd, exit, echo, and type built-in commands.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::io::{self, Write};\n\nfn main() {\n    let stdin = io::stdin();\n    loop {\n        io::stdout().write_all(b\"$ \").unwrap();\n        io::stdout().flush().unwrap();\n        let mut input = String::new();\n        match stdin.read_line(&mut input) {\n            Ok(0) => break,\n            Ok(_) => {\n                let input = input.trim();\n                if input.is_empty() {\n                    continue;\n                }\n                execute_command(input);\n            }\n            Err(_) => break,\n        }\n    }\n}\n\nfn execute_command(input: &str) {\n    let parts: Vec<&str> = input.split_whitespace().collect();\n    if parts.is_empty() {\n        return;\n    }\n    // TODO: Match on parts[0] for \"exit\", \"echo\", \"cd\", \"type\"\n    // For unknown commands, use std::process::Command\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 2: Built-ins\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Piping",
+      "description": "Support the pipe operator | to chain commands together.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::io::{self, Write};\nuse std::process::Command;\n\nfn main() {\n    loop {\n        io::stdout().write_all(b\"$ \").unwrap();\n        io::stdout().flush().unwrap();\n        let mut input = String::new();\n        match io::stdin().read_line(&mut input) {\n            Ok(0) => break,\n            Ok(_) => {\n                let input = input.trim();\n                if input.is_empty() {\n                    continue;\n                }\n                if input.contains('|') {\n                    execute_pipe(input);\n                } else {\n                    execute_single(input);\n                }\n            }\n            Err(_) => break,\n        }\n    }\n}\n\nfn execute_single(input: &str) {\n    // TODO: parse and run a single command\n}\n\nfn execute_pipe(input: &str) {\n    // TODO: split on |, pipe stdout of each into stdin of next\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 3: Piping\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Redirection",
+      "description": "Support > for output redirection and < for input redirection.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::fs::File;\nuse std::io::{self, Read, Write};\n\nfn main() {\n    loop {\n        io::stdout().write_all(b\"$ \").unwrap();\n        io::stdout().flush().unwrap();\n        let mut input = String::new();\n        match io::stdin().read_line(&mut input) {\n            Ok(0) => break,\n            Ok(_) => {\n                let input = input.trim();\n                if input.is_empty() {\n                    continue;\n                }\n                let (cmd, redirect_out, redirect_in) = parse_redirection(input);\n                execute_with_redirect(&cmd, redirect_out.as_deref(), redirect_in.as_deref());\n            }\n            Err(_) => break,\n        }\n    }\n}\n\nfn parse_redirection(input: &str) -> (String, Option<String>, Option<String>) {\n    // TODO: parse > and < from the input string\n    (input.to_string(), None, None)\n}\n\nfn execute_with_redirect(cmd: &str, redirect_out: Option<&str>, redirect_in: Option<&str>) {\n    // TODO: execute command with redirected stdin/stdout\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 4: Redirection\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Job Control",
+      "description": "Support background processes with & operator.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::io::{self, Write};\nuse std::process::Command;\n\nfn main() {\n    let mut background_jobs: Vec<std::process::Child> = Vec::new();\n    loop {\n        io::stdout().write_all(b\"$ \").unwrap();\n        io::stdout().flush().unwrap();\n        let mut input = String::new();\n        match io::stdin().read_line(&mut input) {\n            Ok(0) => break,\n            Ok(_) => {\n                let input = input.trim();\n                if input.is_empty() {\n                    continue;\n                }\n                // TODO: check if input ends with &\n                // If so, spawn as background process and add to background_jobs\n                // Otherwise execute in foreground\n            }\n            Err(_) => break,\n        }\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 5: Job Control\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

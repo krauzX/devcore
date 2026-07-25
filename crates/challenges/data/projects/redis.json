@@ -1,0 +1,140 @@
+{
+  "id": "build-your-own-redis",
+  "name": "Build Your Own Redis",
+  "description": "Implement a Redis-like in-memory key-value store with RESP protocol support.",
+  "difficulty": "hard",
+  "language": "rust",
+  "readme": "# Build Your Own Redis\n\nImplement a simplified Redis server in Rust.\n\n## Stages\n\n1. TCP Server: Accept connections and handle the RESP protocol basics\n2. String Commands: Implement GET, SET, DEL, PING\n3. Expiry: Support TTL and expiration of keys\n4. Lists: Implement LPUSH, RPUSH, LPOP, RPOP, LRANGE\n5. Persistence: Save and load database snapshots to disk\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.",
+  "stages": [
+    {
+      "name": "Stage 1: TCP Server & RESP",
+      "description": "Accept TCP connections and parse the RESP (REdis Serialization Protocol).",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-redis\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"redis-server\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/main.rs",
+          "content": "use std::io::{Read, Write};\nuse std::net::TcpListener;\n\nfn main() {\n    let listener = TcpListener::bind(\"127.0.0.1:6379\").unwrap();\n    println!(\"Redis server listening on 6379\");\n    for stream in listener.incoming().flatten() {\n        // TODO: read RESP-encoded command, parse it, and respond\n    }\n}\n\nfn parse_resp(input: &[u8]) -> Option<Vec<String>> {\n    // TODO: parse RESP array of bulk strings\n    todo!(\"parse RESP protocol\")\n}\n\nfn encode_resp(value: &str) -> String {\n    // TODO: encode a value as a RESP bulk string\n    todo!(\"encode RESP response\")\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 1: TCP Server & RESP\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: String Commands",
+      "description": "Implement GET, SET, DEL, and PING commands.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::sync::{Arc, Mutex};\nuse std::io::{Read, Write};\nuse std::net::TcpListener;\n\nstruct Store {\n    strings: HashMap<String, String>,\n}\n\nfn handle_command(store: &mut Store, args: &[String]) -> String {\n    if args.is_empty() {\n        return encode_resp_error(\"ERR empty command\");\n    }\n    match args[0].to_uppercase().as_str() {\n        \"PING\" => encode_resp(\"PONG\"),\n        \"SET\" => {\n            // TODO: SET key value\n            todo!(\"implement SET\")\n        }\n        \"GET\" => {\n            // TODO: GET key\n            todo!(\"implement GET\")\n        }\n        \"DEL\" => {\n            // TODO: DEL key [key ...]\n            todo!(\"implement DEL\")\n        }\n        _ => encode_resp_error(\"ERR unknown command\"),\n    }\n}\n\nfn encode_resp(value: &str) -> String {\n    format!(\"${}\\\r\\\n{}\\\r\\\n\", value.len(), value)\n}\n\nfn encode_resp_error(msg: &str) -> String {\n    format!(\"-{}\\\r\\\n\", msg)\n}\n\nfn main() {\n    let store = Arc::new(Mutex::new(Store { strings: HashMap::new() }));\n    let listener = TcpListener::bind(\"127.0.0.1:6379\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: read commands, handle with shared store\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 2: String Commands\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Expiry",
+      "description": "Support TTL and automatic expiration of keys.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::sync::{Arc, Mutex};\nuse std::time::{Duration, Instant};\n\nstruct ExpiryEntry {\n    value: String,\n    expires_at: Option<Instant>,\n}\n\nstruct Store {\n    entries: HashMap<String, ExpiryEntry>,\n}\n\nfn handle_command(store: &mut Store, args: &[String]) -> String {\n    if args.is_empty() {\n        return encode_resp_error(\"ERR empty command\");\n    }\n    match args[0].to_uppercase().as_str() {\n        \"SET\" => {\n            // TODO: SET key value [EX seconds] [PX milliseconds]\n            todo!(\"implement SET with expiry\")\n        }\n        \"GET\" => {\n            // TODO: GET key (check expiry first)\n            todo!(\"implement GET with expiry check\")\n        }\n        \"TTL\" => {\n            // TODO: return time-to-live for a key\n            todo!(\"implement TTL\")\n        }\n        _ => encode_resp_error(\"ERR unknown command\"),\n    }\n}\n\nfn encode_resp(value: &str) -> String {\n    format!(\"${}\\\r\\\n{}\\\r\\\n\", value.len(), value)\n}\n\nfn encode_resp_error(msg: &str) -> String {\n    format!(\"-{}\\\r\\\n\", msg)\n}\n\nfn main() {\n    let store = Arc::new(Mutex::new(Store { entries: HashMap::new() }));\n    let listener = std::net::TcpListener::bind(\"127.0.0.1:6379\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: handle connections with expiry-aware store\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 3: Expiry\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Lists",
+      "description": "Implement LPUSH, RPUSH, LPOP, RPOP, and LRANGE commands.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::sync::{Arc, Mutex};\nuse std::time::Instant;\n\nstruct ExpiryEntry {\n    value: String,\n    expires_at: Option<Instant>,\n}\n\nstruct Store {\n    entries: HashMap<String, ExpiryEntry>,\n    lists: HashMap<String, Vec<String>>,\n}\n\nfn handle_command(store: &mut Store, args: &[String]) -> String {\n    if args.is_empty() {\n        return encode_resp_error(\"ERR empty command\");\n    }\n    match args[0].to_uppercase().as_str() {\n        \"LPUSH\" => {\n            // TODO: LPUSH key element [element ...]\n            todo!(\"implement LPUSH\")\n        }\n        \"RPUSH\" => {\n            // TODO: RPUSH key element [element ...]\n            todo!(\"implement RPUSH\")\n        }\n        \"LPOP\" => {\n            // TODO: LPOP key [count]\n            todo!(\"implement LPOP\")\n        }\n        \"RPOP\" => {\n            // TODO: RPOP key [count]\n            todo!(\"implement RPOP\")\n        }\n        \"LRANGE\" => {\n            // TODO: LRANGE key start stop\n            todo!(\"implement LRANGE\")\n        }\n        _ => encode_resp_error(\"ERR unknown command\"),\n    }\n}\n\nfn encode_resp(value: &str) -> String {\n    format!(\"${}\\\r\\\n{}\\\r\\\n\", value.len(), value)\n}\n\nfn encode_resp_error(msg: &str) -> String {\n    format!(\"-{}\\\r\\\n\", msg)\n}\n\nfn main() {\n    let store = Arc::new(Mutex::new(Store {\n        entries: HashMap::new(),\n        lists: HashMap::new(),\n    }));\n    let listener = std::net::TcpListener::bind(\"127.0.0.1:6379\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: handle connections\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 4: Lists\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Persistence",
+      "description": "Save and load database snapshots to disk.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::sync::{Arc, Mutex};\nuse std::time::Instant;\n\nstruct ExpiryEntry {\n    value: String,\n    expires_at: Option<Instant>,\n}\n\nstruct Store {\n    entries: HashMap<String, ExpiryEntry>,\n    lists: HashMap<String, Vec<String>>,\n}\n\nfn save_snapshot(store: &Store, path: &str) -> std::io::Result<()> {\n    // TODO: serialize store to a file (e.g., RDB-like binary format or JSON)\n    todo!(\"save snapshot\")\n}\n\nfn load_snapshot(store: &mut Store, path: &str) -> std::io::Result<()> {\n    // TODO: deserialize store from a file\n    todo!(\"load snapshot\")\n}\n\nfn handle_command(store: &mut Store, args: &[String]) -> String {\n    if args.is_empty() {\n        return encode_resp_error(\"ERR empty command\");\n    }\n    match args[0].to_uppercase().as_str() {\n        \"SAVE\" => {\n            // TODO: persist to disk\n            todo!(\"implement SAVE\")\n        }\n        \"BGSAVE\" => {\n            // TODO: persist in background\n            todo!(\"implement BGSAVE\")\n        }\n        _ => handle_data_command(store, args),\n    }\n}\n\nfn handle_data_command(store: &mut Store, args: &[String]) -> String {\n    // TODO: all data commands from previous stages\n    todo!(\"handle data commands\")\n}\n\nfn encode_resp(value: &str) -> String {\n    format!(\"${}\\\r\\\n{}\\\r\\\n\", value.len(), value)\n}\n\nfn encode_resp_error(msg: &str) -> String {\n    format!(\"-{}\\\r\\\n\", msg)\n}\n\nfn main() {\n    let store = Arc::new(Mutex::new(Store {\n        entries: HashMap::new(),\n        lists: HashMap::new(),\n    }));\n    // TODO: try loading snapshot on startup\n    let listener = std::net::TcpListener::bind(\"127.0.0.1:6379\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: handle connections\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 5: Persistence\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

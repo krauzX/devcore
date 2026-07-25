@@ -1,0 +1,145 @@
+{
+  "id": "rustlings-exercises",
+  "name": "Rustlings Exercises",
+  "description": "A curated set of Rust exercises covering variables, types, functions, control flow, ownership, structs, enums, and error handling — based on the MIT-licensed rustlings project.",
+  "difficulty": "easy",
+  "language": "rust",
+  "readme": "# Rustlings Exercises\n\nPractice Rust fundamentals with guided exercises, based on the rustlings project (MIT license).\n\n## Stages\n\n1. Variables and Types: Learn about mutability, type inference, shadowing, and basic types\n2. Functions and Control Flow: Practice functions, if/else, loops, and pattern matching\n3. Ownership and Borrowing: Understand Rust's ownership system, references, and lifetimes\n4. Structs and Enums: Define and use structs, enums, methods, and traits\n5. Error Handling: Work with Result, Option, the ? operator, and custom error types\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.\n\nRun `cargo test` after implementing each exercise.",
+  "stages": [
+    {
+      "name": "Stage 1: Variables and Types",
+      "description": "Learn about mutability, type inference, shadowing, and basic Rust types.",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"rustlings-exercises\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[lib]\nname = \"rustlings_exercises\"\npath = \"src/lib.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/lib.rs",
+          "content": "pub mod variables;\npub mod functions;\npub mod ownership;\npub mod structs_enums;\npub mod error_handling;\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/variables.rs",
+          "content": "/// Fix the compilation errors in this function.\n/// Make `x` mutable and reassign it to 5,\n/// then create a shadow that converts x to a string.\npub fn variables_are_mutable() -> String {\n    let x = 1;\n    // TODO: make x mutable\n    // x = 5;\n    let x = x.to_string(); // shadowing\n    x\n}\n\n/// Fix this function to use the correct types.\n/// The function should return a tuple (i32, f64, &str).\npub fn tuple_types() -> (i32, f64, &str) {\n    // TODO: return a tuple with (42, 3.14, \"hello\")\n    todo!(\"return the correct tuple\")\n}\n\n/// Fix this function to use a Vec<i32>.\n/// Create a vector, push values 1, 2, 3, and return it.\npub fn vector_basics() -> Vec<i32> {\n    // TODO: create a Vec, push 1, 2, 3, return it\n    todo!(\"create and return a vector\")\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_variables.rs",
+          "content": "use rustlings_exercises::variables::*;\n\n#[test]\nfn test_variables_are_mutable() {\n    let result = variables_are_mutable();\n    assert_eq!(result, \"5\");\n}\n\n#[test]\nfn test_tuple_types() {\n    let (a, b, c) = tuple_types();\n    assert_eq!(a, 42);\n    assert!((b - 3.14).abs() < f64::EPSILON);\n    assert_eq!(c, \"hello\");\n}\n\n#[test]\nfn test_vector_basics() {\n    let v = vector_basics();\n    assert_eq!(v, vec![1, 2, 3]);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/variables.rs",
+          "content": "pub fn variables_are_mutable() -> String {\n    let mut x = 1;\n    x = 5;\n    let x = x.to_string();\n    x\n}\n\npub fn tuple_types() -> (i32, f64, &str) {\n    (42, 3.14, \"hello\")\n}\n\npub fn vector_basics() -> Vec<i32> {\n    let mut v = Vec::new();\n    v.push(1);\n    v.push(2);\n    v.push(3);\n    v\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: Functions and Control Flow",
+      "description": "Practice writing functions, if/else expressions, loops, and pattern matching with match.",
+      "files": [
+        {
+          "path": "src/functions.rs",
+          "content": "/// Implement this function to calculate the nth Fibonacci number.\n/// Use recursion for now (we'll optimize later).\npub fn fibonacci(n: u32) -> u64 {\n    // TODO: return the nth Fibonacci number\n    // fibonacci(0) = 0, fibonacci(1) = 1\n    // fibonacci(n) = fibonacci(n-1) + fibonacci(n-2)\n    todo!(\"implement fibonacci\")\n}\n\n/// Implement a function that returns \"positive\", \"negative\", or \"zero\"\n/// based on the input integer.\npub fn classify_number(n: i32) -> &'static str {\n    // TODO: use if/else or match to classify\n    todo!(\"classify the number\")\n}\n\n/// Implement a function that sums all even numbers from 1 to n (inclusive)\n/// using a loop.\npub fn sum_evens(n: u32) -> u32 {\n    // TODO: use a for loop and sum even numbers\n    todo!(\"sum even numbers\")\n}\n\n/// Implement pattern matching to return a description of a shape.\n/// Shape is (width: f64, height: f64, kind: &str)\npub fn describe_shape(width: f64, height: f64, kind: &str) -> String {\n    // TODO: match on kind (\"circle\", \"rectangle\", \"triangle\")\n    // Return descriptions like \"Circle with radius 5.0\"\n    todo!(\"describe shape with pattern matching\")\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_functions.rs",
+          "content": "use rustlings_exercises::functions::*;\n\n#[test]\nfn test_fibonacci() {\n    assert_eq!(fibonacci(0), 0);\n    assert_eq!(fibonacci(1), 1);\n    assert_eq!(fibonacci(5), 5);\n    assert_eq!(fibonacci(10), 55);\n}\n\n#[test]\nfn test_classify_number() {\n    assert_eq!(classify_number(5), \"positive\");\n    assert_eq!(classify_number(-3), \"negative\");\n    assert_eq!(classify_number(0), \"zero\");\n}\n\n#[test]\nfn test_sum_evens() {\n    assert_eq!(sum_evens(10), 30); // 2+4+6+8+10\n    assert_eq!(sum_evens(1), 0);\n    assert_eq!(sum_evens(6), 12); // 2+4+6\n}\n\n#[test]\nfn test_describe_shape() {\n    assert!(describe_shape(5.0, 0.0, \"circle\").contains(\"Circle\"));\n    assert!(describe_shape(10.0, 20.0, \"rectangle\").contains(\"Rectangle\"));\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/functions.rs",
+          "content": "pub fn fibonacci(n: u32) -> u64 {\n    match n {\n        0 => 0,\n        1 => 1,\n        _ => fibonacci(n - 1) + fibonacci(n - 2),\n    }\n}\n\npub fn classify_number(n: i32) -> &'static str {\n    match n {\n        x if x > 0 => \"positive\",\n        x if x < 0 => \"negative\",\n        _ => \"zero\",\n    }\n}\n\npub fn sum_evens(n: u32) -> u32 {\n    (1..=n).filter(|x| x % 2 == 0).sum()\n}\n\npub fn describe_shape(width: f64, height: f64, kind: &str) -> String {\n    match kind {\n        \"circle\" => format!(\"Circle with radius {}\", width),\n        \"rectangle\" => format!(\"Rectangle {}x{}\", width, height),\n        \"triangle\" => format!(\"Triangle with base {} and height {}\", width, height),\n        _ => format!(\"Unknown shape: {}\", kind),\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Ownership and Borrowing",
+      "description": "Understand Rust's ownership system, references, mutable references, and lifetimes.",
+      "files": [
+        {
+          "path": "src/ownership.rs",
+          "content": "/// Fix this function so it compiles.\n/// The issue is that `s` is moved when passed to `print_string`.\n/// Use a reference instead.\npub fn print_and_return(s: String) -> String {\n    // TODO: fix ownership issue\n    // print_string(s);\n    s\n}\n\nfn print_string(s: String) {\n    println!(\"{}\", s);\n}\n\n/// Implement a function that takes two strings and returns\n/// the longer one. Use references to avoid unnecessary cloning.\npub fn longer_string(a: &str, b: &str) -> &str {\n    // TODO: return a reference to the longer string\n    todo!(\"return the longer string\")\n}\n\n/// Implement a function that pushes a value onto a Vec\n/// using a mutable reference.\npub fn push_value(v: &mut Vec<i32>, value: i32) {\n    // TODO: push value onto the vector\n    todo!(\"push value\")\n}\n\n/// Fix this function to use lifetimes correctly.\n/// Both the input and output references must have the same lifetime.\npub fn first_word(s: &str) -> &str {\n    // TODO: return the first word (up to first space)\n    todo!(\"return first word\")\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_ownership.rs",
+          "content": "use rustlings_exercises::ownership::*;\n\n#[test]\nfn test_print_and_return() {\n    let s = \"hello\".to_string();\n    let result = print_and_return(s);\n    assert_eq!(result, \"hello\");\n}\n\n#[test]\nfn test_longer_string() {\n    assert_eq!(longer_string(\"hi\", \"hello\"), \"hello\");\n    assert_eq!(longer_string(\"long\", \"a\"), \"long\");\n}\n\n#[test]\nfn test_push_value() {\n    let mut v = vec![1, 2];\n    push_value(&mut v, 3);\n    assert_eq!(v, vec![1, 2, 3]);\n}\n\n#[test]\nfn test_first_word() {\n    assert_eq!(first_word(\"hello world\"), \"hello\");\n    assert_eq!(first_word(\"single\"), \"single\");\n    assert_eq!(first_word(\"\"), \"\");\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/ownership.rs",
+          "content": "pub fn print_and_return(s: String) -> String {\n    println!(\"{}\", s);\n    s\n}\n\npub fn longer_string(a: &str, b: &str) -> &str {\n    if a.len() >= b.len() { a } else { b }\n}\n\npub fn push_value(v: &mut Vec<i32>, value: i32) {\n    v.push(value);\n}\n\npub fn first_word(s: &str) -> &str {\n    match s.find(' ') {\n        Some(pos) => &s[..pos],\n        None => s,\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Structs and Enums",
+      "description": "Define and use structs, enums, methods, trait implementations, and derive macros.",
+      "files": [
+        {
+          "path": "src/structs_enums.rs",
+          "content": "#[derive(Debug, Clone, PartialEq)]\npub struct Point {\n    pub x: f64,\n    pub y: f64,\n}\n\nimpl Point {\n    pub fn new(x: f64, y: f64) -> Self {\n        // TODO\n        todo!(\"create new Point\")\n    }\n\n    pub fn distance_to(&self, other: &Point) -> f64 {\n        // TODO: calculate Euclidean distance\n        todo!(\"calculate distance\")\n    }\n}\n\n#[derive(Debug, Clone, PartialEq)]\npub enum Shape {\n    Circle(f64),               // radius\n    Rectangle(f64, f64),       // width, height\n    Triangle(f64, f64),        // base, height\n}\n\nimpl Shape {\n    pub fn area(&self) -> f64 {\n        // TODO: calculate area for each variant\n        todo!(\"calculate area\")\n    }\n\n    pub fn describe(&self) -> String {\n        // TODO: return a description string\n        todo!(\"describe shape\")\n    }\n}\n\n/// Implement the std::fmt::Display trait for Shape.\n/// Format: \"Shape::Circle(5.0)\" etc.\nimpl std::fmt::Display for Shape {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        // TODO\n        todo!(\"implement Display for Shape\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_structs_enums.rs",
+          "content": "use rustlings_exercises::structs_enums::*;\n\n#[test]\nfn test_point_new() {\n    let p = Point::new(3.0, 4.0);\n    assert_eq!(p.x, 3.0);\n    assert_eq!(p.y, 4.0);\n}\n\n#[test]\nfn test_distance() {\n    let a = Point::new(0.0, 0.0);\n    let b = Point::new(3.0, 4.0);\n    assert!((a.distance_to(&b) - 5.0).abs() < 1e-10);\n}\n\n#[test]\nfn test_circle_area() {\n    let c = Shape::Circle(5.0);\n    let expected = std::f64::consts::PI * 25.0;\n    assert!((c.area() - expected).abs() < 1e-10);\n}\n\n#[test]\nfn test_rectangle_area() {\n    let r = Shape::Rectangle(3.0, 4.0);\n    assert!((r.area() - 12.0).abs() < 1e-10);\n}\n\n#[test]\nfn test_shape_describe() {\n    let s = Shape::Triangle(10.0, 5.0);\n    assert!(s.describe().contains(\"Triangle\"));\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/structs_enums.rs",
+          "content": "#[derive(Debug, Clone, PartialEq)]\npub struct Point { pub x: f64, pub y: f64 }\n\nimpl Point {\n    pub fn new(x: f64, y: f64) -> Self { Point { x, y } }\n    pub fn distance_to(&self, other: &Point) -> f64 {\n        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()\n    }\n}\n\n#[derive(Debug, Clone, PartialEq)]\npub enum Shape {\n    Circle(f64),\n    Rectangle(f64, f64),\n    Triangle(f64, f64),\n}\n\nimpl Shape {\n    pub fn area(&self) -> f64 {\n        match self {\n            Shape::Circle(r) => std::f64::consts::PI * r * r,\n            Shape::Rectangle(w, h) => w * h,\n            Shape::Triangle(b, h) => 0.5 * b * h,\n        }\n    }\n    pub fn describe(&self) -> String {\n        match self {\n            Shape::Circle(r) => format!(\"Circle with radius {}\", r),\n            Shape::Rectangle(w, h) => format!(\"Rectangle {}x{}\", w, h),\n            Shape::Triangle(b, h) => format!(\"Triangle with base {} and height {}\", b, h),\n        }\n    }\n}\n\nimpl std::fmt::Display for Shape {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        match self {\n            Shape::Circle(r) => write!(f, \"Shape::Circle({})\", r),\n            Shape::Rectangle(w, h) => write!(f, \"Shape::Rectangle({}, {})\", w, h),\n            Shape::Triangle(b, h) => write!(f, \"Shape::Triangle({}, {})\", b, h),\n        }\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Error Handling",
+      "description": "Work with Result, Option, the ? operator, and custom error types.",
+      "files": [
+        {
+          "path": "src/error_handling.rs",
+          "content": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum AppError {\n    ParseError(ParseIntError),\n    NotFound(String),\n    DivisionByZero,\n}\n\nimpl From<ParseIntError> for AppError {\n    fn from(e: ParseIntError) -> Self {\n        AppError::ParseError(e)\n    }\n}\n\nimpl std::fmt::Display for AppError {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        // TODO: implement Display for each variant\n        todo!(\"implement Display for AppError\")\n    }\n}\n\n/// Parse a string to i32 and divide it by `divisor`.\n/// Return AppError::ParseError or AppError::DivisionByZero as appropriate.\npub fn parse_and_divide(input: &str, divisor: i32) -> Result<i32, AppError> {\n    // TODO: use ? operator to parse, then check for division by zero\n    todo!(\"parse and divide\")\n}\n\n/// Find the first even number in a Vec<i32>.\n/// Return None if no even number is found.\npub fn find_first_even(numbers: &[i32]) -> Option<i32> {\n    // TODO: use iterator methods\n    todo!(\"find first even\")\n}\n\n/// Convert a Vec<Result<i32, AppError>> into a Result<Vec<i32>, AppError>.\n/// If any element is Err, return the first Err.\npub fn collect_results(items: Vec<Result<i32, AppError>>) -> Result<Vec<i32>, AppError> {\n    // TODO: use iterator methods\n    todo!(\"collect results\")\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_error_handling.rs",
+          "content": "use rustlings_exercises::error_handling::*;\n\n#[test]\nfn test_parse_and_divide_ok() {\n    assert_eq!(parse_and_divide(\"10\", 2).unwrap(), 5);\n}\n\n#[test]\nfn test_parse_and_divide_parse_error() {\n    assert!(parse_and_divide(\"abc\", 2).is_err());\n}\n\n#[test]\nfn test_parse_and_divide_div_zero() {\n    match parse_and_divide(\"10\", 0) {\n        Err(AppError::DivisionByZero) => {}\n        _ => panic!(\"Expected DivisionByZero\"),\n    }\n}\n\n#[test]\nfn test_find_first_even() {\n    assert_eq!(find_first_even(&[1, 3, 4, 5]), Some(4));\n    assert_eq!(find_first_even(&[1, 3, 5]), None);\n}\n\n#[test]\nfn test_collect_results() {\n    let items = vec![Ok(1), Ok(2), Ok(3)];\n    assert_eq!(collect_results(items).unwrap(), vec![1, 2, 3]);\n    let items = vec![Ok(1), Err(AppError::DivisionByZero), Ok(3)];\n    assert!(collect_results(items).is_err());\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/error_handling.rs",
+          "content": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum AppError {\n    ParseError(ParseIntError),\n    NotFound(String),\n    DivisionByZero,\n}\n\nimpl From<ParseIntError> for AppError {\n    fn from(e: ParseIntError) -> Self { AppError::ParseError(e) }\n}\n\nimpl std::fmt::Display for AppError {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        match self {\n            AppError::ParseError(e) => write!(f, \"Parse error: {}\", e),\n            AppError::NotFound(s) => write!(f, \"Not found: {}\", s),\n            AppError::DivisionByZero => write!(f, \"Division by zero\"),\n        }\n    }\n}\n\nimpl std::error::Error for AppError {}\n\npub fn parse_and_divide(input: &str, divisor: i32) -> Result<i32, AppError> {\n    let n: i32 = input.parse()?;\n    if divisor == 0 { return Err(AppError::DivisionByZero); }\n    Ok(n / divisor)\n}\n\npub fn find_first_even(numbers: &[i32]) -> Option<i32> {\n    numbers.iter().find(|&&n| n % 2 == 0).copied()\n}\n\npub fn collect_results(items: Vec<Result<i32, AppError>>) -> Result<Vec<i32>, AppError> {\n    items.into_iter().collect()\n}\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "id": "build-your-own-git",
+  "name": "Build Your Own Git",
+  "description": "Implement core Git functionality: init, add, commit, log, branch, checkout, and diff.",
+  "difficulty": "hard",
+  "language": "rust",
+  "readme": "# Build Your Own Git\n\nImplement a simplified version of Git in Rust.\n\n## Stages\n\n1. Init: Initialize a new repository with a .git directory\n2. Add & Commit: Stage files and create commits with SHA-1 hashing\n3. Log & Status: View commit history and working tree status\n4. Branch & Checkout: Create branches and switch between them\n5. Diff: Show differences between commits and working tree\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.",
+  "stages": [
+    {
+      "name": "Stage 1: Init",
+      "description": "Initialize a new repository with the .git directory structure.",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-git\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"mygit\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::fs;\nuse std::path::Path;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mygit <command>\");\n        return;\n    }\n    match args[1].as_str() {\n        \"init\" => init_repo(),\n        cmd => eprintln!(\"mygit: '{}' is not a mygit command.\", cmd),\n    }\n}\n\nfn init_repo() {\n    // TODO: create .git/ directory with objects/, refs/, HEAD\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 1: Init\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: Add & Commit",
+      "description": "Stage files and create commits using SHA-1 hashing.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::fs;\nuse std::path::Path;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mygit <command>\");\n        return;\n    }\n    match args[1].as_str() {\n        \"init\" => init_repo(),\n        \"add\" => {\n            // TODO: stage files by writing blob objects\n        }\n        \"commit\" => {\n            // TODO: create tree and commit objects\n        }\n        cmd => eprintln!(\"mygit: '{}' is not a mygit command.\", cmd),\n    }\n}\n\nfn init_repo() {\n    // TODO: create .git/ directory structure\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 2: Add & Commit\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Log & Status",
+      "description": "View commit history and check working tree status.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::fs;\nuse std::path::Path;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mygit <command>\");\n        return;\n    }\n    match args[1].as_str() {\n        \"init\" => init_repo(),\n        \"add\" => todo!(\"stage files\"),\n        \"commit\" => todo!(\"create commit\"),\n        \"log\" => {\n            // TODO: walk the commit chain from HEAD, printing each commit\n        }\n        \"status\" => {\n            // TODO: compare working tree to index and HEAD\n        }\n        cmd => eprintln!(\"mygit: '{}' is not a mygit command.\", cmd),\n    }\n}\n\nfn init_repo() {\n    // TODO\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 3: Log & Status\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Branch & Checkout",
+      "description": "Create branches and switch between them.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::fs;\nuse std::path::Path;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mygit <command>\");\n        return;\n    }\n    match args[1].as_str() {\n        \"init\" => init_repo(),\n        \"add\" => todo!(\"stage files\"),\n        \"commit\" => todo!(\"create commit\"),\n        \"log\" => todo!(\"show log\"),\n        \"status\" => todo!(\"show status\"),\n        \"branch\" => {\n            // TODO: create or list branches\n        }\n        \"checkout\" => {\n            // TODO: switch to a branch, update HEAD and working tree\n        }\n        cmd => eprintln!(\"mygit: '{}' is not a mygit command.\", cmd),\n    }\n}\n\nfn init_repo() {\n    // TODO\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 4: Branch & Checkout\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Diff",
+      "description": "Show differences between commits and the working tree.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::env;\nuse std::fs;\nuse std::path::Path;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mygit <command>\");\n        return;\n    }\n    match args[1].as_str() {\n        \"init\" => init_repo(),\n        \"add\" => todo!(\"stage files\"),\n        \"commit\" => todo!(\"create commit\"),\n        \"log\" => todo!(\"show log\"),\n        \"status\" => todo!(\"show status\"),\n        \"branch\" => todo!(\"create or list branches\"),\n        \"checkout\" => todo!(\"switch branch\"),\n        \"diff\" => {\n            // TODO: compute and display diffs\n        }\n        cmd => eprintln!(\"mygit: '{}' is not a mygit command.\", cmd),\n    }\n}\n\nfn init_repo() {\n    // TODO\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 5: Diff\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

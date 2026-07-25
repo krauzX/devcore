@@ -1,0 +1,140 @@
+{
+  "id": "build-your-own-http-server",
+  "name": "Build Your Own HTTP Server",
+  "description": "Implement an HTTP server from scratch using Rust's TcpListener.",
+  "difficulty": "medium",
+  "language": "rust",
+  "readme": "# Build Your Own HTTP Server\n\nBuild an HTTP/1.1 server using only the standard library.\n\n## Stages\n\n1. TCP Listener: Accept connections and respond with a fixed response\n2. HTTP Parsing: Parse the request method, path, headers, and body\n3. Routing: Serve different responses based on method and path\n4. Static Files: Serve files from a directory\n5. Dynamic Response: Support query parameters and JSON responses\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.",
+  "stages": [
+    {
+      "name": "Stage 1: TCP Listener",
+      "description": "Accept TCP connections and return a fixed HTTP response.",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-http-server\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"server\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/main.rs",
+          "content": "use std::io::{Read, Write};\nuse std::net::TcpListener;\n\nfn main() {\n    let listener = TcpListener::bind(\"127.0.0.1:8080\").unwrap();\n    println!(\"Listening on port 8080\");\n    for stream in listener.incoming() {\n        match stream {\n            Ok(mut stream) => {\n                let mut buffer = [0; 1024];\n                stream.read(&mut buffer).unwrap();\n                // TODO: parse the request and send a proper HTTP response\n                let response = \"HTTP/1.1 200 OK\\\r\\\n\\\r\\\nHello, World!\";\n                stream.write_all(response.as_bytes()).unwrap();\n            }\n            Err(e) => eprintln!(\"Connection failed: {}\", e),\n        }\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 1: TCP Listener\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: HTTP Parsing",
+      "description": "Parse HTTP request method, path, headers, and body from raw bytes.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::io::{Read, Write};\nuse std::net::TcpListener;\n\nstruct HttpRequest {\n    method: String,\n    path: String,\n    headers: HashMap<String, String>,\n    body: String,\n}\n\nfn parse_request(raw: &str) -> Option<HttpRequest> {\n    // TODO: parse HTTP request line, headers, and body\n    todo!(\"parse HTTP request\")\n}\n\nfn main() {\n    let listener = TcpListener::bind(\"127.0.0.1:8080\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: read full request, parse it, and respond\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 2: HTTP Parsing\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Routing",
+      "description": "Route requests to different handlers based on method and path.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::io::{Read, Write};\nuse std::net::TcpListener;\n\nstruct HttpRequest {\n    method: String,\n    path: String,\n    headers: HashMap<String, String>,\n    body: String,\n}\n\nfn handle_request(req: &HttpRequest) -> (u16, String) {\n    // TODO: match on method + path and return (status_code, body)\n    todo!(\"route the request\")\n}\n\nfn main() {\n    let listener = TcpListener::bind(\"127.0.0.1:8080\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: read, parse, route, and respond\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 3: Routing\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Static Files",
+      "description": "Serve files from a local directory based on the request path.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::io::{Read, Write};\nuse std::net::TcpListener;\nuse std::path::PathBuf;\n\nstruct HttpRequest {\n    method: String,\n    path: String,\n    headers: HashMap<String, String>,\n    body: String,\n}\n\nfn serve_static(root: &PathBuf, path: &str) -> Option<(String, Vec<u8>)> {\n    // TODO: map request path to a file under root, read and return it\n    todo!(\"serve static file\")\n}\n\nfn main() {\n    let root = PathBuf::from(\"./public\");\n    let listener = TcpListener::bind(\"127.0.0.1:8080\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: parse request, try static file, fall back to handler\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 4: Static Files\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Dynamic Response",
+      "description": "Support query parameters and JSON response bodies.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "use std::collections::HashMap;\nuse std::io::{Read, Write};\nuse std::net::TcpListener;\nuse std::path::PathBuf;\n\nstruct HttpRequest {\n    method: String,\n    path: String,\n    headers: HashMap<String, String>,\n    body: String,\n    query: HashMap<String, String>,\n}\n\nfn parse_query_string(query: &str) -> HashMap<String, String> {\n    // TODO: parse key=value pairs from query string\n    todo!(\"parse query string\")\n}\n\nfn main() {\n    let root = PathBuf::from(\"./public\");\n    let listener = TcpListener::bind(\"127.0.0.1:8080\").unwrap();\n    for stream in listener.incoming().flatten() {\n        // TODO: parse request with query params, serve static or JSON\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 5: Dynamic Response\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+[
+  {"group": "Week 1 - Sequences", "items": [
+    {"slug": "two-sum", "name": "Two Sum", "difficulty": "Easy", "url": "https://leetcode.com/problems/two-sum/"},
+    {"slug": "contains-duplicate", "name": "Contains Duplicate", "difficulty": "Easy", "url": "https://leetcode.com/problems/contains-duplicate/"},
+    {"slug": "best-time-to-buy-and-sell-stock", "name": "Best Time to Buy and Sell Stock", "difficulty": "Easy", "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+    {"slug": "valid-anagram", "name": "Valid Anagram", "difficulty": "Easy", "url": "https://leetcode.com/problems/valid-anagram/"},
+    {"slug": "valid-parentheses", "name": "Valid Parentheses", "difficulty": "Easy", "url": "https://leetcode.com/problems/valid-parentheses/"},
+    {"slug": "maximum-subarray", "name": "Maximum Subarray", "difficulty": "Easy", "url": "https://leetcode.com/problems/maximum-subarray/"},
+    {"slug": "product-of-array-except-self", "name": "Product of Array Except Self", "difficulty": "Medium", "url": "https://leetcode.com/problems/product-of-array-except-self/"},
+    {"slug": "3sum", "name": "3Sum", "difficulty": "Medium", "url": "https://leetcode.com/problems/3sum/"},
+    {"slug": "merge-intervals", "name": "Merge Intervals", "difficulty": "Medium", "url": "https://leetcode.com/problems/merge-intervals/"},
+    {"slug": "group-anagrams", "name": "Group Anagrams", "difficulty": "Medium", "url": "https://leetcode.com/problems/group-anagrams/"}
+  ]},
+  {"group": "Week 2 - Data Structures", "items": [
+    {"slug": "reverse-linked-list", "name": "Reverse a Linked List", "difficulty": "Easy", "url": "https://leetcode.com/problems/reverse-linked-list/"},
+    {"slug": "linked-list-cycle", "name": "Detect Cycle in a Linked List", "difficulty": "Easy", "url": "https://leetcode.com/problems/linked-list-cycle/"},
+    {"slug": "container-with-most-water", "name": "Container With Most Water", "difficulty": "Medium", "url": "https://leetcode.com/problems/container-with-most-water/"},
+    {"slug": "find-minimum-in-rotated-sorted-array", "name": "Find Minimum in Rotated Sorted Array", "difficulty": "Medium", "url": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/"},
+    {"slug": "longest-repeating-character-replacement", "name": "Longest Repeating Character Replacement", "difficulty": "Medium", "url": "https://leetcode.com/problems/longest-repeating-character-replacement/"},
+    {"slug": "longest-substring-without-repeating-characters", "name": "Longest Substring Without Repeating Characters", "difficulty": "Medium", "url": "https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
+    {"slug": "number-of-islands", "name": "Number of Islands", "difficulty": "Medium", "url": "https://leetcode.com/problems/number-of-islands/"},
+    {"slug": "remove-nth-node-from-end-of-list", "name": "Remove Nth Node From End Of List", "difficulty": "Medium", "url": "https://leetcode.com/problems/remove-nth-node-from-end-of-list/"},
+    {"slug": "palindromic-substrings", "name": "Palindromic Substrings", "difficulty": "Medium", "url": "https://leetcode.com/problems/palindromic-substrings/"},
+    {"slug": "pacific-atlantic-water-flow", "name": "Pacific Atlantic Water Flow", "difficulty": "Medium", "url": "https://leetcode.com/problems/pacific-atlantic-water-flow/"},
+    {"slug": "minimum-window-substring", "name": "Minimum Window Substring", "difficulty": "Hard", "url": "https://leetcode.com/problems/minimum-window-substring/"}
+  ]},
+  {"group": "Week 3 - Non-linear Data Structures", "items": [
+    {"slug": "invert-binary-tree", "name": "Invert/Flip Binary Tree", "difficulty": "Easy", "url": "https://leetcode.com/problems/invert-binary-tree/"},
+    {"slug": "validate-binary-search-tree", "name": "Validate Binary Search Tree", "difficulty": "Medium", "url": "https://leetcode.com/problems/validate-binary-search-tree/"},
+    {"slug": "non-overlapping-intervals", "name": "Non-overlapping Intervals", "difficulty": "Medium", "url": "https://leetcode.com/problems/non-overlapping-intervals/"},
+    {"slug": "construct-binary-tree-from-preorder-and-inorder-traversal", "name": "Construct Binary Tree from Preorder and Inorder Traversal", "difficulty": "Medium", "url": "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/"},
+    {"slug": "top-k-frequent-elements", "name": "Top K Frequent Elements", "difficulty": "Medium", "url": "https://leetcode.com/problems/top-k-frequent-elements/"},
+    {"slug": "clone-graph", "name": "Clone Graph", "difficulty": "Medium", "url": "https://leetcode.com/problems/clone-graph/"},
+    {"slug": "course-schedule", "name": "Course Schedule", "difficulty": "Medium", "url": "https://leetcode.com/problems/course-schedule/"},
+    {"slug": "serialize-and-deserialize-binary-tree", "name": "Serialize and Deserialize Binary Tree", "difficulty": "Hard", "url": "https://leetcode.com/problems/serialize-and-deserialize-binary-tree/"},
+    {"slug": "binary-tree-maximum-path-sum", "name": "Binary Tree Maximum Path Sum", "difficulty": "Hard", "url": "https://leetcode.com/problems/binary-tree-maximum-path-sum/"}
+  ]},
+  {"group": "Week 4 - More Data Structures", "items": [
+    {"slug": "subtree-of-another-tree", "name": "Subtree of Another Tree", "difficulty": "Easy", "url": "https://leetcode.com/problems/subtree-of-another-tree/"},
+    {"slug": "lowest-common-ancestor-of-a-binary-search-tree", "name": "Lowest Common Ancestor of BST", "difficulty": "Easy", "url": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/"},
+    {"slug": "implement-trie-prefix-tree", "name": "Implement Trie (Prefix Tree)", "difficulty": "Medium", "url": "https://leetcode.com/problems/implement-trie-prefix-tree/"},
+    {"slug": "design-add-and-search-words-data-structure", "name": "Add and Search Word", "difficulty": "Medium", "url": "https://leetcode.com/problems/design-add-and-search-words-data-structure/"},
+    {"slug": "kth-smallest-element-in-a-bst", "name": "Kth Smallest Element in a BST", "difficulty": "Medium", "url": "https://leetcode.com/problems/kth-smallest-element-in-a-bst/"},
+    {"slug": "merge-k-sorted-lists", "name": "Merge K Sorted Lists", "difficulty": "Hard", "url": "https://leetcode.com/problems/merge-k-sorted-lists/"},
+    {"slug": "find-median-from-data-stream", "name": "Find Median from Data Stream", "difficulty": "Hard", "url": "https://leetcode.com/problems/find-median-from-data-stream/"},
+    {"slug": "insert-interval", "name": "Insert Interval", "difficulty": "Medium", "url": "https://leetcode.com/problems/insert-interval/"},
+    {"slug": "longest-consecutive-sequence", "name": "Longest Consecutive Sequence", "difficulty": "Medium", "url": "https://leetcode.com/problems/longest-consecutive-sequence/"},
+    {"slug": "word-search-ii", "name": "Word Search II", "difficulty": "Hard", "url": "https://leetcode.com/problems/word-search-ii/"}
+  ]},
+  {"group": "Week 5 - Dynamic Programming", "items": [
+    {"slug": "climbing-stairs", "name": "Climbing Stairs", "difficulty": "Easy", "url": "https://leetcode.com/problems/climbing-stairs/"},
+    {"slug": "coin-change", "name": "Coin Change", "difficulty": "Medium", "url": "https://leetcode.com/problems/coin-change/"},
+    {"slug": "longest-increasing-subsequence", "name": "Longest Increasing Subsequence", "difficulty": "Medium", "url": "https://leetcode.com/problems/longest-increasing-subsequence/"},
+    {"slug": "combination-sum-iv", "name": "Combination Sum", "difficulty": "Medium", "url": "https://leetcode.com/problems/combination-sum-iv/"},
+    {"slug": "house-robber", "name": "House Robber", "difficulty": "Medium", "url": "https://leetcode.com/problems/house-robber/"},
+    {"slug": "house-robber-ii", "name": "House Robber II", "difficulty": "Medium", "url": "https://leetcode.com/problems/house-robber-ii/"},
+    {"slug": "decode-ways", "name": "Decode Ways", "difficulty": "Medium", "url": "https://leetcode.com/problems/decode-ways/"},
+    {"slug": "unique-paths", "name": "Unique Paths", "difficulty": "Medium", "url": "https://leetcode.com/problems/unique-paths/"},
+    {"slug": "jump-game", "name": "Jump Game", "difficulty": "Medium", "url": "https://leetcode.com/problems/jump-game/"},
+    {"slug": "word-break", "name": "Word Break", "difficulty": "Medium", "url": "https://leetcode.com/problems/word-break/"}
+  ]}
+]

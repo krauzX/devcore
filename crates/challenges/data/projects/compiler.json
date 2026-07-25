@@ -1,0 +1,155 @@
+{
+  "id": "build-your-own-compiler",
+  "name": "Build Your Own Compiler",
+  "description": "Build a compiler for a simple language: lexer, parser, AST, and code generator.",
+  "difficulty": "hard",
+  "language": "rust",
+  "readme": "# Build Your Own Compiler\n\nBuild a compiler for a simple C-like language in Rust.\n\n## Stages\n\n1. Lexer: Tokenize source code into tokens\n2. Parser: Parse tokens into an Abstract Syntax Tree (AST)\n3. Interpreter: Walk the AST and execute programs directly\n4. Type Checker: Add static type checking\n5. Code Generator: Generate assembly or bytecode from the AST\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.",
+  "stages": [
+    {
+      "name": "Stage 1: Lexer",
+      "description": "Tokenize source code into a stream of tokens (keywords, identifiers, numbers, symbols).",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-compiler\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"mycc\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/main.rs",
+          "content": "mod lexer;\nuse lexer::Lexer;\nuse std::env;\nuse std::fs;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mycc <file>\");\n        return;\n    }\n    let source = fs::read_to_string(&args[1]).expect(\"Failed to read file\");\n    let mut lexer = Lexer::new(&source);\n    let tokens = lexer.tokenize();\n    for token in &tokens {\n        println!(\"{:?}\", token);\n    }\n}\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/lexer.rs",
+          "content": "#[derive(Debug, Clone, PartialEq)]\npub enum Token {\n    // TODO: define token variants\n    // e.g., Integer(i64), Float(f64), String(String),\n    // Identifier(String), Plus, Minus, Star, Slash,\n    // LeftParen, RightParen, LeftBrace, RightBrace,\n    // Semicolon, Equals, If, Else, While, Return, Func, Let, Int, Float, Bool, Print,\n    EOF,\n}\n\npub struct Lexer {\n    input: Vec<char>,\n    pos: usize,\n}\n\nimpl Lexer {\n    pub fn new(input: &str) -> Self {\n        Lexer {\n            input: input.chars().collect(),\n            pos: 0,\n        }\n    }\n\n    pub fn tokenize(&mut self) -> Vec<Token> {\n        let mut tokens = Vec::new();\n        // TODO: scan characters and produce tokens\n        tokens.push(Token::EOF);\n        tokens\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 1: Lexer\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: Parser",
+      "description": "Parse tokens into an Abstract Syntax Tree (AST) using recursive descent.",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "mod lexer;\nmod parser;\nuse lexer::Lexer;\nuse parser::Parser;\nuse std::env;\nuse std::fs;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mycc <file>\");\n        return;\n    }\n    let source = fs::read_to_string(&args[1]).expect(\"Failed to read file\");\n    let mut lexer = Lexer::new(&source);\n    let tokens = lexer.tokenize();\n    let mut parser = Parser::new(tokens);\n    let ast = parser.parse_program();\n    println!(\"{:#?}\", ast);\n}\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/parser.rs",
+          "content": "use crate::lexer::Token;\n\n#[derive(Debug, Clone)]\npub enum Expr {\n    // TODO: define expression variants\n    // Integer(i64), Float(f64), String(String), Bool(bool),\n    // Ident(String), BinaryOp { op: String, left: Box<Expr>, right: Box<Expr> },\n    // UnaryOp { op: String, expr: Box<Expr> },\n    // Call { name: String, args: Vec<Expr> },\n    Placeholder,\n}\n\n#[derive(Debug, Clone)]\npub enum Stmt {\n    // TODO: define statement variants\n    // ExprStmt(Expr), Return(Expr),\n    // Let { name: String, ty: String, value: Expr },\n    // If { condition: Expr, then_body: Vec<Stmt>, else_body: Option<Vec<Stmt>> },\n    // While { condition: Expr, body: Vec<Stmt> },\n    // Func { name: String, params: Vec<(String, String)>, return_type: String, body: Vec<Stmt> },\n    // Print(Expr),\n    Placeholder,\n}\n\npub struct Parser {\n    tokens: Vec<Token>,\n    pos: usize,\n}\n\nimpl Parser {\n    pub fn new(tokens: Vec<Token>) -> Self {\n        Parser { tokens, pos: 0 }\n    }\n\n    pub fn parse_program(&mut self) -> Vec<Stmt> {\n        // TODO: parse a sequence of statements until EOF\n        todo!(\"parse program\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 2: Parser\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Interpreter",
+      "description": "Walk the AST and execute programs directly (tree-walk interpreter).",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "mod lexer;\nmod parser;\nmod interpreter;\nuse lexer::Lexer;\nuse parser::Parser;\nuse interpreter::Interpreter;\nuse std::env;\nuse std::fs;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    if args.len() < 2 {\n        eprintln!(\"usage: mycc <file>\");\n        return;\n    }\n    let source = fs::read_to_string(&args[1]).expect(\"Failed to read file\");\n    let mut lexer = Lexer::new(&source);\n    let tokens = lexer.tokenize();\n    let mut parser = Parser::new(tokens);\n    let ast = parser.parse_program();\n    let mut interp = Interpreter::new();\n    if let Err(e) = interp.run(&ast) {\n        eprintln!(\"Runtime error: {}\", e);\n    }\n}\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/interpreter.rs",
+          "content": "use crate::parser::{Expr, Stmt};\nuse std::collections::HashMap;\n\npub struct Interpreter {\n    variables: HashMap<String, i64>,\n}\n\nimpl Interpreter {\n    pub fn new() -> Self {\n        Interpreter {\n            variables: HashMap::new(),\n        }\n    }\n\n    pub fn run(&mut self, program: &[Stmt]) -> Result<(), String> {\n        for stmt in program {\n            self.exec_stmt(stmt)?;\n        }\n        Ok(())\n    }\n\n    fn exec_stmt(&mut self, stmt: &Stmt) -> Result<(), String> {\n        // TODO: implement statement execution\n        todo!(\"execute statement\")\n    }\n\n    fn eval_expr(&mut self, expr: &Expr) -> Result<i64, String> {\n        // TODO: implement expression evaluation\n        todo!(\"evaluate expression\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 3: Interpreter\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: Type Checker",
+      "description": "Add static type checking before interpretation.",
+      "files": [
+        {
+          "path": "src/typechecker.rs",
+          "content": "use crate::parser::{Expr, Stmt};\nuse std::collections::HashMap;\n\n#[derive(Debug, Clone, PartialEq)]\npub enum Type {\n    Int,\n    Float,\n    Bool,\n    String,\n    Void,\n    Func(Vec<Type>, Box<Type>),\n}\n\npub struct TypeChecker {\n    env: HashMap<String, Type>,\n}\n\nimpl TypeChecker {\n    pub fn new() -> Self {\n        TypeChecker {\n            env: HashMap::new(),\n        }\n    }\n\n    pub fn check_program(&mut self, program: &[Stmt]) -> Result<(), String> {\n        for stmt in program {\n            self.check_stmt(stmt)?;\n        }\n        Ok(())\n    }\n\n    fn check_stmt(&mut self, stmt: &Stmt) -> Result<(), String> {\n        // TODO: type-check a statement\n        todo!(\"type-check statement\")\n    }\n\n    fn check_expr(&mut self, expr: &Expr) -> Result<Type, String> {\n        // TODO: type-check an expression\n        todo!(\"type-check expression\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 4: Type Checker\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Code Generator",
+      "description": "Generate simple bytecode or stack-based virtual machine instructions from the AST.",
+      "files": [
+        {
+          "path": "src/codegen.rs",
+          "content": "use crate::parser::{Expr, Stmt};\n\n#[derive(Debug, Clone)]\npub enum Instruction {\n    Push(i64),\n    Pop,\n    Add,\n    Sub,\n    Mul,\n    Div,\n    LoadVar(String),\n    StoreVar(String),\n    Print,\n    Halt,\n}\n\npub struct CodeGenerator {\n    instructions: Vec<Instruction>,\n}\n\nimpl CodeGenerator {\n    pub fn new() -> Self {\n        CodeGenerator {\n            instructions: Vec::new(),\n        }\n    }\n\n    pub fn generate(&mut self, program: &[Stmt]) -> Vec<Instruction> {\n        for stmt in program {\n            self.gen_stmt(stmt);\n        }\n        self.instructions.push(Instruction::Halt);\n        self.instructions.clone()\n    }\n\n    fn gen_stmt(&mut self, stmt: &Stmt) {\n        // TODO: generate instructions for a statement\n        todo!(\"generate code for statement\")\n    }\n\n    fn gen_expr(&mut self, expr: &Expr) {\n        // TODO: generate instructions for an expression\n        todo!(\"generate code for expression\")\n    }\n}\n\npub struct VM {\n    stack: Vec<i64>,\n    vars: std::collections::HashMap<String, i64>,\n}\n\nimpl VM {\n    pub fn new() -> Self {\n        VM {\n            stack: Vec::new(),\n            vars: std::collections::HashMap::new(),\n        }\n    }\n\n    pub fn run(&mut self, instructions: &[Instruction]) -> Result<(), String> {\n        for instr in instructions {\n            self.exec(instr)?;\n        }\n        Ok(())\n    }\n\n    fn exec(&mut self, instr: &Instruction) -> Result<(), String> {\n        // TODO: execute a single instruction\n        todo!(\"execute instruction\")\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_basic.rs",
+          "content": "#[test]\nfn test_placeholder() {\n    assert!(true);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "solution.rs",
+          "content": "// Solution for Stage 5: Code Generator\n// Implement the TODO items in the skeleton code.\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "id": "build-your-own-text-editor",
+  "name": "Build Your Own Text Editor",
+  "description": "Implement a terminal text editor inspired by Hecto, featuring raw input, cursor movement, text editing, file I/O, and syntax highlighting.",
+  "difficulty": "medium",
+  "language": "rust",
+  "readme": "# Build Your Own Text Editor\n\nImplement a terminal text editor in Rust, inspired by the Hecto tutorial.\n\n## Stages\n\n1. Raw Input Mode: Put the terminal into raw mode and read keypresses one byte at a time\n2. Cursor Movement: Handle arrow keys, Home, End, Page Up/Down to navigate\n3. Text Insertion: Insert characters, handle backspace, Enter key, and line management\n4. File I/O: Open, save, and create new files with a status bar\n5. Syntax Highlighting Basics: Highlight Rust keywords, numbers, and strings with color\n\n## Getting Started\n\nEach stage builds on the previous one. Start with stage 1.\n\nRun `cargo test` after implementing each stage.",
+  "stages": [
+    {
+      "name": "Stage 1: Raw Input Mode",
+      "description": "Put the terminal into raw mode and read keypresses. Handle Ctrl-Q to quit.",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "content": "[package]\nname = \"my-editor\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"editor\"\npath = \"src/main.rs\"\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/main.rs",
+          "content": "mod editor;\nuse editor::Editor;\n\nfn main() {\n    let mut editor = Editor::new();\n    if let Err(e) = editor.run() {\n        eprintln!(\"Error: {}\", e);\n    }\n}\n",
+          "is_executable": false
+        },
+        {
+          "path": "src/editor.rs",
+          "content": "use std::io::{self, Read, Write};\n\npub struct Editor {\n    should_quit: bool,\n}\n\nimpl Editor {\n    pub fn new() -> Self {\n        Editor { should_quit: false }\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        // TODO: enable raw mode using crossterm or manual termios\n        // Enter a loop:\n        //   1. Draw the screen (clear + draw tilde lines)\n        //   2. Read a keypress\n        //   3. Handle the keypress\n        //   4. If should_quit, break\n        // On exit, restore terminal state\n        Ok(())\n    }\n\n    fn process_keypress(&mut self, key: u8) {\n        // TODO: match on key\n        // Ctrl-Q (0x11) => set should_quit = true\n        // _ => do nothing\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_editor.rs",
+          "content": "use my_editor::editor::Editor;\n\n#[test]\nfn test_editor_new() {\n    let editor = Editor::new();\n    assert!(!editor.should_quit);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::io::{self, Write};\n\npub struct Editor {\n    should_quit: bool,\n}\n\nimpl Editor {\n    pub fn new() -> Self {\n        Editor { should_quit: false }\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        crossterm::terminal::enable_raw_mode()?;\n        io::stdout().write_all(crossterm::cursor::Hide::to_string().as_bytes())?;\n        io::stdout().write_all(crossterm::terminal::Clear(crossterm::terminal::ClearType::All).to_string().as_bytes())?;\n        loop {\n            self.refresh_screen()?;\n            if self.should_quit {\n                break;\n            }\n            let mut buf = [0u8; 1];\n            io::stdin().read_exact(&mut buf)?;\n            self.process_keypress(buf[0]);\n        }\n        io::stdout().write_all(crossterm::cursor::Show::to_string().as_bytes())?;\n        crossterm::terminal::disable_raw_mode()?;\n        Ok(())\n    }\n\n    fn process_keypress(&mut self, key: u8) {\n        match key {\n            0x11 => self.should_quit = true,\n            _ => {}\n        }\n    }\n\n    fn refresh_screen(&self) -> Result<(), Box<dyn std::error::Error>> {\n        let mut stdout = io::stdout();\n        stdout.write_all(b\"~\\\r\\\n\")?;\n        if self.should_quit {\n            write!(stdout, crossterm::cursor::MoveTo(0, 0))?;\n        }\n        stdout.flush()?;\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 2: Cursor Movement",
+      "description": "Handle arrow keys, Home, End, Page Up/Down to move the cursor around the buffer.",
+      "files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::io::{self, Read, Write};\n\npub struct Cursor {\n    pub x: usize,\n    pub y: usize,\n}\n\npub struct Editor {\n    should_quit: bool,\n    cursor: Cursor,\n    rows: Vec<String>,\n}\n\nimpl Editor {\n    pub fn new() -> Self {\n        Editor {\n            should_quit: false,\n            cursor: Cursor { x: 0, y: 0 },\n            rows: Vec::new(),\n        }\n    }\n\n    fn move_cursor(&mut self, key: u8) {\n        // TODO: match on key byte values\n        // Arrow Up (0x1B, 0x5B, 0x41) => decrease y if y > 0\n        // Arrow Down (0x1B, 0x5B, 0x42) => increase y if y < rows.len() - 1\n        // Arrow Left (0x1B, 0x5B, 0x44) => decrease x if x > 0\n        // Arrow Right (0x1B, 0x5B, 0x43) => increase x\n        // Home => x = 0\n        // End => x = row_length\n        // Page Up => y = 0\n        // Page Down => y = rows.len() - 1\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        // TODO: raw mode setup and main loop\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_editor.rs",
+          "content": "use my_editor::editor::{Cursor, Editor};\n\n#[test]\nfn test_cursor_initial_position() {\n    let editor = Editor::new();\n    assert_eq!(editor.cursor.x, 0);\n    assert_eq!(editor.cursor.y, 0);\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::io::{self, Read, Write};\n\npub struct Cursor {\n    pub x: usize,\n    pub y: usize,\n}\n\npub struct Editor {\n    should_quit: bool,\n    cursor: Cursor,\n    rows: Vec<String>,\n}\n\nimpl Editor {\n    pub fn new() -> Self {\n        Editor {\n            should_quit: false,\n            cursor: Cursor { x: 0, y: 0 },\n            rows: vec![String::new()],\n        }\n    }\n\n    fn move_cursor(&mut self, key: u8) {\n        match key {\n            0x41 => { if self.cursor.y > 0 { self.cursor.y -= 1; } }\n            0x42 => {\n                let last = self.rows.len().saturating_sub(1);\n                if self.cursor.y < last { self.cursor.y += 1; }\n            }\n            0x44 => { if self.cursor.x > 0 { self.cursor.x -= 1; } }\n            0x43 => { self.cursor.x += 1; }\n            0x48 => { self.cursor.x = 0; }\n            0x46 => {\n                let row_len = self.rows.get(self.cursor.y).map_or(0, |r| r.len());\n                self.cursor.x = row_len;\n            }\n            _ => {}\n        }\n        let row_len = self.rows.get(self.cursor.y).map_or(0, |r| r.len());\n        if self.cursor.x > row_len {\n            self.cursor.x = row_len;\n        }\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        crossterm::terminal::enable_raw_mode()?;\n        loop {\n            if self.should_quit { break; }\n            let mut buf = [0u8; 1];\n            io::stdin().read_exact(&mut buf)?;\n            match buf[0] {\n                0x11 => self.should_quit = true,\n                0x1B => {\n                    let mut seq = [0u8; 2];\n                    io::stdin().read_exact(&mut seq)?;\n                    if seq[0] == 0x5B {\n                        self.move_cursor(seq[1]);\n                    }\n                }\n                _ => {}\n            }\n        }\n        crossterm::terminal::disable_raw_mode()?;\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 3: Text Insertion",
+      "description": "Insert characters, handle backspace, Enter key, and line management.",
+      "files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::io::{self, Read, Write};\n\npub struct Cursor {\n    pub x: usize,\n    pub y: usize,\n}\n\npub struct Editor {\n    should_quit: bool,\n    cursor: Cursor,\n    rows: Vec<String>,\n    filename: Option<String>,\n}\n\nimpl Editor {\n    pub fn new() -> Self {\n        Editor {\n            should_quit: false,\n            cursor: Cursor { x: 0, y: 0 },\n            rows: vec![String::new()],\n            filename: None,\n        }\n    }\n\n    fn insert_char(&mut self, c: char) {\n        // TODO: insert c at cursor position in the current row\n        // If rows is empty, push a new row first\n    }\n\n    fn delete_char(&mut self) {\n        // TODO: handle backspace\n        // If x > 0, remove char before cursor and decrement x\n        // If x == 0 and y > 0, join current row with previous row\n    }\n\n    fn insert_newline(&mut self) {\n        // TODO: split current row at cursor x position\n        // Put the remainder on a new row below\n        // Move cursor to column 0 of the new row\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        // TODO: raw mode and main loop\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_editor.rs",
+          "content": "use my_editor::editor::Editor;\n\n#[test]\nfn test_insert_char() {\n    let mut editor = Editor::new();\n    editor.insert_char('h');\n    assert_eq!(editor.rows[0], \"h\");\n}\n\n#[test]\nfn test_insert_newline() {\n    let mut editor = Editor::new();\n    editor.insert_char('a');\n    editor.cursor.x = 1;\n    editor.insert_newline();\n    assert_eq!(editor.rows.len(), 2);\n    assert_eq!(editor.cursor.y, 1);\n    assert_eq!(editor.cursor.x, 0);\n}\n\n#[test]\nfn test_delete_char() {\n    let mut editor = Editor::new();\n    editor.insert_char('a');\n    editor.insert_char('b');\n    editor.cursor.x = 2;\n    editor.delete_char();\n    assert_eq!(editor.rows[0], \"a\");\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::io::{self, Read, Write};\n\npub struct Cursor {\n    pub x: usize,\n    pub y: usize,\n}\n\npub struct Editor {\n    should_quit: bool,\n    cursor: Cursor,\n    rows: Vec<String>,\n    filename: Option<String>,\n}\n\nimpl Editor {\n    pub fn new() -> Self {\n        Editor {\n            should_quit: false,\n            cursor: Cursor { x: 0, y: 0 },\n            rows: vec![String::new()],\n            filename: None,\n        }\n    }\n\n    fn insert_char(&mut self, c: char) {\n        if self.rows.is_empty() {\n            self.rows.push(String::new());\n        }\n        let row = &mut self.rows[self.cursor.y];\n        row.insert(self.cursor.x, c);\n        self.cursor.x += 1;\n    }\n\n    fn delete_char(&mut self) {\n        if self.cursor.x > 0 {\n            let row = &mut self.rows[self.cursor.y];\n            row.remove(self.cursor.x - 1);\n            self.cursor.x -= 1;\n        } else if self.cursor.y > 0 {\n            let current_row = self.rows.remove(self.cursor.y);\n            self.cursor.y -= 1;\n            self.cursor.x = self.rows[self.cursor.y].len();\n            self.rows[self.cursor.y].push_str(&current_row);\n        }\n    }\n\n    fn insert_newline(&mut self) {\n        let remainder = self.rows[self.cursor.y][self.cursor.x..].to_string();\n        self.rows[self.cursor.y].truncate(self.cursor.x);\n        self.cursor.y += 1;\n        self.cursor.x = 0;\n        self.rows.insert(self.cursor.y, remainder);\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        crossterm::terminal::enable_raw_mode()?;\n        loop {\n            if self.should_quit { break; }\n            let mut buf = [0u8; 1];\n            io::stdin().read_exact(&mut buf)?;\n            match buf[0] {\n                0x11 => self.should_quit = true,\n                0x0D => self.insert_newline(),\n                0x7F | 0x08 => self.delete_char(),\n                0x1B => {\n                    let mut seq = [0u8; 2];\n                    io::stdin().read_exact(&mut seq)?;\n                    if seq[0] == 0x5B {\n                        self.move_cursor(seq[1]);\n                    }\n                }\n                c if !c.is_control() => self.insert_char(c as char),\n                _ => {}\n            }\n        }\n        crossterm::terminal::disable_raw_mode()?;\n        Ok(())\n    }\n\n    fn move_cursor(&mut self, key: u8) {\n        match key {\n            0x41 => { if self.cursor.y > 0 { self.cursor.y -= 1; } }\n            0x42 => { let last = self.rows.len().saturating_sub(1); if self.cursor.y < last { self.cursor.y += 1; } }\n            0x44 => { if self.cursor.x > 0 { self.cursor.x -= 1; } else if self.cursor.y > 0 { self.cursor.y -= 1; self.cursor.x = self.rows[self.cursor.y].len(); } }\n            0x43 => {\n                let row_len = self.rows[self.cursor.y].len();\n                if self.cursor.x < row_len { self.cursor.x += 1; } else { self.cursor.y += 1; self.cursor.x = 0; }\n            }\n            _ => {}\n        }\n        let row_len = self.rows.get(self.cursor.y).map_or(0, |r| r.len());\n        if self.cursor.x > row_len { self.cursor.x = row_len; }\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 4: File I/O",
+      "description": "Open, save, and create new files with a status bar showing the filename.",
+      "files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::fs;\nuse std::io::{self, Read, Write};\n\npub struct Cursor {\n    pub x: usize,\n    pub y: usize,\n}\n\npub struct Editor {\n    should_quit: bool,\n    cursor: Cursor,\n    rows: Vec<String>,\n    filename: Option<String>,\n    status_msg: String,\n    dirty: bool,\n}\n\nimpl Editor {\n    pub fn new(filename: Option<String>) -> Self {\n        let rows = match &filename {\n            Some(f) => fs::read_to_string(f)\n                .map(|s| s.lines().map(String::from).collect::<Vec<_>>())\n                .unwrap_or_else(|_| vec![String::new()]),\n            None => vec![String::new()],\n        };\n        Editor {\n            should_quit: false,\n            cursor: Cursor { x: 0, y: 0 },\n            rows,\n            filename,\n            status_msg: String::new(),\n            dirty: false,\n        }\n    }\n\n    pub fn save(&mut self) {\n        // TODO: write all rows to self.filename\n        // If no filename, prompt the user (for now, use \"untitled\")\n        // Set dirty = false, update status_msg\n    }\n\n    pub fn open_prompt(&mut self) {\n        // TODO: for now, just set a default filename\n        // In a real editor, you'd prompt the user for input\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        // TODO: raw mode and main loop\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_editor.rs",
+          "content": "use my_editor::editor::Editor;\n\n#[test]\nfn test_editor_new_with_no_file() {\n    let editor = Editor::new(None);\n    assert_eq!(editor.rows.len(), 1);\n    assert!(!editor.dirty);\n}\n\n#[test]\nfn test_editor_new_with_file() {\n    std::fs::write(\"/tmp/test_editor_input.txt\", \"hello\\\nworld\").unwrap();\n    let editor = Editor::new(Some(\"/tmp/test_editor_input.txt\".to_string()));\n    assert_eq!(editor.rows.len(), 2);\n    assert_eq!(editor.rows[0], \"hello\");\n    assert_eq!(editor.rows[1], \"world\");\n    std::fs::remove_file(\"/tmp/test_editor_input.txt\").ok();\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/editor.rs",
+          "content": "use std::fs;\nuse std::io::{self, Read, Write};\n\npub struct Cursor {\n    pub x: usize,\n    pub y: usize,\n}\n\npub struct Editor {\n    should_quit: bool,\n    cursor: Cursor,\n    rows: Vec<String>,\n    filename: Option<String>,\n    status_msg: String,\n    dirty: bool,\n}\n\nimpl Editor {\n    pub fn new(filename: Option<String>) -> Self {\n        let rows = match &filename {\n            Some(f) => fs::read_to_string(f)\n                .map(|s| {\n                    let mut lines: Vec<String> = s.lines().map(String::from).collect();\n                    if lines.is_empty() { lines.push(String::new()); }\n                    lines\n                })\n                .unwrap_or_else(|_| vec![String::new()]),\n            None => vec![String::new()],\n        };\n        Editor {\n            should_quit: false,\n            cursor: Cursor { x: 0, y: 0 },\n            rows,\n            filename,\n            status_msg: String::new(),\n            dirty: false,\n        }\n    }\n\n    pub fn save(&mut self) {\n        let filename = self.filename.clone().unwrap_or_else(|| \"untitled\".to_string());\n        let content: String = self.rows.join(\"\\\n\");\n        match fs::write(&filename, &content) {\n            Ok(_) => {\n                self.dirty = false;\n                self.status_msg = format!(\"Saved to {} ({} bytes)\", filename, content.len());\n            }\n            Err(e) => {\n                self.status_msg = format!(\"Error saving: {}\", e);\n            }\n        }\n    }\n\n    fn insert_char(&mut self, c: char) {\n        if self.rows.is_empty() { self.rows.push(String::new()); }\n        let row = &mut self.rows[self.cursor.y];\n        row.insert(self.cursor.x, c);\n        self.cursor.x += 1;\n        self.dirty = true;\n    }\n\n    fn delete_char(&mut self) {\n        if self.cursor.x > 0 {\n            let row = &mut self.rows[self.cursor.y];\n            row.remove(self.cursor.x - 1);\n            self.cursor.x -= 1;\n            self.dirty = true;\n        } else if self.cursor.y > 0 {\n            let current_row = self.rows.remove(self.cursor.y);\n            self.cursor.y -= 1;\n            self.cursor.x = self.rows[self.cursor.y].len();\n            self.rows[self.cursor.y].push_str(&current_row);\n            self.dirty = true;\n        }\n    }\n\n    fn insert_newline(&mut self) {\n        let remainder = self.rows[self.cursor.y][self.cursor.x..].to_string();\n        self.rows[self.cursor.y].truncate(self.cursor.x);\n        self.cursor.y += 1;\n        self.cursor.x = 0;\n        self.rows.insert(self.cursor.y, remainder);\n        self.dirty = true;\n    }\n\n    fn move_cursor(&mut self, key: u8) {\n        match key {\n            0x41 => { if self.cursor.y > 0 { self.cursor.y -= 1; } }\n            0x42 => { let last = self.rows.len().saturating_sub(1); if self.cursor.y < last { self.cursor.y += 1; } }\n            0x44 => { if self.cursor.x > 0 { self.cursor.x -= 1; } else if self.cursor.y > 0 { self.cursor.y -= 1; self.cursor.x = self.rows[self.cursor.y].len(); } }\n            0x43 => { let row_len = self.rows[self.cursor.y].len(); if self.cursor.x < row_len { self.cursor.x += 1; } else { self.cursor.y += 1; self.cursor.x = 0; } }\n            0x48 => { self.cursor.x = 0; }\n            0x46 => { self.cursor.x = self.rows[self.cursor.y].len(); }\n            _ => {}\n        }\n        let row_len = self.rows.get(self.cursor.y).map_or(0, |r| r.len());\n        if self.cursor.x > row_len { self.cursor.x = row_len; }\n    }\n\n    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        crossterm::terminal::enable_raw_mode()?;\n        loop {\n            if self.should_quit { break; }\n            let mut buf = [0u8; 1];\n            io::stdin().read_exact(&mut buf)?;\n            match buf[0] {\n                0x11 => self.should_quit = true,\n                0x13 => self.save(),\n                0x0D => self.insert_newline(),\n                0x7F | 0x08 => self.delete_char(),\n                0x1B => {\n                    let mut seq = [0u8; 2];\n                    io::stdin().read_exact(&mut seq)?;\n                    if seq[0] == 0x5B { self.move_cursor(seq[1]); }\n                }\n                c if !c.is_control() => self.insert_char(c as char),\n                _ => {}\n            }\n        }\n        crossterm::terminal::disable_raw_mode()?;\n        Ok(())\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    },
+    {
+      "name": "Stage 5: Syntax Highlighting Basics",
+      "description": "Highlight Rust keywords, numbers, and string literals with color using ANSI escape codes.",
+      "files": [
+        {
+          "path": "src/highlight.rs",
+          "content": "pub enum SyntaxType {\n    Number,\n    Keyword,\n    String,\n    Normal,\n}\n\npub struct SyntaxRule {\n    pub pattern: String,\n    pub syntax_type: SyntaxType,\n}\n\npub fn highlight_line(line: &str) -> Vec<(SyntaxType, String)> {\n    // TODO: tokenize the line into segments with syntax types\n    // 1. Find string literals (between double quotes)\n    // 2. Find keywords (if, else, while, fn, let, mut, pub, struct, impl, return, use, mod, match, self)\n    // 3. Find numbers (digits, optionally with underscores)\n    // 4. Everything else is Normal\n    todo!(\"implement syntax highlighting\")\n}\n\npub fn to_ansi_segment(syntax_type: &SyntaxType, text: &str) -> String {\n    match syntax_type {\n        SyntaxType::Number => format!(\"\\x1b[33m{}\\x1b[0m\", text),   // yellow\n        SyntaxType::Keyword => format!(\"\\x1b[36m{}\\x1b[0m\", text),   // cyan\n        SyntaxType::String => format!(\"\\x1b[32m{}\\x1b[0m\", text),    // green\n        SyntaxType::Normal => text.to_string(),\n    }\n}\n",
+          "is_executable": false
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_highlight.rs",
+          "content": "use my_editor::highlight::{highlight_line, to_ansi_segment, SyntaxType};\n\n#[test]\nfn test_highlight_number() {\n    let result = highlight_line(\"42\");\n    assert_eq!(result.len(), 1);\n    assert!(matches!(result[0].0, SyntaxType::Number));\n}\n\n#[test]\nfn test_highlight_keyword() {\n    let result = highlight_line(\"let\");\n    assert_eq!(result.len(), 1);\n    assert!(matches!(result[0].0, SyntaxType::Keyword));\n}\n\n#[test]\nfn test_highlight_string() {\n    let result = highlight_line(\"\\\"hello\\\"\");\n    assert_eq!(result.len(), 1);\n    assert!(matches!(result[0].0, SyntaxType::String));\n}\n\n#[test]\nfn test_ansi_codes() {\n    let output = to_ansi_segment(&SyntaxType::Number, \"42\");\n    assert!(output.contains(\"\\x1b[33m\"));\n    assert!(output.contains(\"42\"));\n}\n",
+          "is_executable": false
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "src/highlight.rs",
+          "content": "pub enum SyntaxType {\n    Number,\n    Keyword,\n    String,\n    Normal,\n}\n\nconst KEYWORDS: &[&str] = &[\"if\", \"else\", \"while\", \"fn\", \"let\", \"mut\", \"pub\", \"struct\", \"impl\", \"return\", \"use\", \"mod\", \"match\", \"self\", \"true\", \"false\"];\n\npub fn highlight_line(line: &str) -> Vec<(SyntaxType, String)> {\n    let mut segments = Vec::new();\n    let mut chars: Vec<char> = line.chars().collect();\n    let mut i = 0;\n    while i < chars.len() {\n        // String literal\n        if chars[i] == '\"' {\n            let start = i;\n            i += 1;\n            while i < chars.len() && chars[i] != '\"' {\n                if chars[i] == '\\\\' { i += 1; }\n                i += 1;\n            }\n            if i < chars.len() { i += 1; }\n            segments.push((SyntaxType::String, chars[start..i].iter().collect()));\n            continue;\n        }\n        // Number\n        if chars[i].is_ascii_digit() {\n            let start = i;\n            while i < chars.len() && (chars[i].is_ascii_digit() || chars[i] == '_') {\n                i += 1;\n            }\n            segments.push((SyntaxType::Number, chars[start..i].iter().collect()));\n            continue;\n        }\n        // Identifier / keyword\n        if chars[i].is_alphabetic() || chars[i] == '_' {\n            let start = i;\n            while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '_') {\n                i += 1;\n            }\n            let word: String = chars[start..i].iter().collect();\n            let stype = if KEYWORDS.contains(&word.as_str()) {\n                SyntaxType::Keyword\n            } else {\n                SyntaxType::Normal\n            };\n            segments.push((stype, word));\n            continue;\n        }\n        // Other characters\n        segments.push((SyntaxType::Normal, chars[i].to_string()));\n        i += 1;\n    }\n    segments\n}\n\npub fn to_ansi_segment(syntax_type: &SyntaxType, text: &str) -> String {\n    match syntax_type {\n        SyntaxType::Number => format!(\"\\x1b[33m{}\\x1b[0m\", text),\n        SyntaxType::Keyword => format!(\"\\x1b[36m{}\\x1b[0m\", text),\n        SyntaxType::String => format!(\"\\x1b[32m{}\\x1b[0m\", text),\n        SyntaxType::Normal => text.to_string(),\n    }\n}\n",
+          "is_executable": false
+        }
+      ]
+    }
+  ]
+}
