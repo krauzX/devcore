@@ -14,4 +14,4 @@ if (!isWin) {
   }
 }
 
-console.log("devcore binaries ready.");
+console.log("devcore installed successfully.");
