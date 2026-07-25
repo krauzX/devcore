@@ -13,7 +13,14 @@ pub fn render_git_tab(frame: &mut Frame, area: Rect, app: &App) {
         .spacing(1)
         .split(area);
 
-    render_streak_panel(frame, chunks[0], app);
+    let left = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
+        .spacing(1)
+        .split(chunks[0]);
+
+    render_streak_panel(frame, left[0], app);
+    render_repo_analysis(frame, left[1], app);
     render_skills_panel(frame, chunks[1], app);
 }
 
@@ -39,6 +46,71 @@ fn render_streak_panel(frame: &mut Frame, area: Rect, app: &App) {
         frame.render_widget(
             Paragraph::new("No git repo detected").style(Style::default().fg(theme::OVERLAY)).alignment(Alignment::Center),
             inner);
+    }
+}
+
+fn render_repo_analysis(frame: &mut Frame, area: Rect, app: &App) {
+    let block = Block::default()
+        .title(" Repo Analysis ")
+        .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme::OVERLAY))
+        .style(Style::default().bg(theme::SURFACE));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    if let Some(analysis) = &app.repo_analysis {
+        let mut lines: Vec<Line> = Vec::new();
+        lines.push(Line::from(Span::styled(
+            format!("Commits: {}", analysis.total_commits),
+            Style::default().fg(theme::SUBTEXT),
+        )));
+        lines.push(Line::from(vec![
+            Span::styled("Insertions: ", Style::default().fg(theme::SUBTEXT)),
+            Span::styled(format!("+{}", analysis.total_insertions), Style::default().fg(theme::GREEN)),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("Deletions:  ", Style::default().fg(theme::SUBTEXT)),
+            Span::styled(format!("-{}", analysis.total_deletions), Style::default().fg(theme::RED)),
+        ]));
+        lines.push(Line::from(Span::styled(
+            format!("Files: {}  Authors: {}", analysis.unique_files, analysis.unique_authors),
+            Style::default().fg(theme::SUBTEXT),
+        )));
+        if let Some(first) = &analysis.first_commit {
+            lines.push(Line::from(Span::styled(
+                format!("First: {}", first.format("%Y-%m-%d")),
+                Style::default().fg(theme::SUBTEXT),
+            )));
+        }
+        if let Some(last) = &analysis.last_commit {
+            lines.push(Line::from(Span::styled(
+                format!("Last:  {}", last.format("%Y-%m-%d")),
+                Style::default().fg(theme::SUBTEXT),
+            )));
+        }
+        if !app.languages.is_empty() {
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled(
+                "Languages",
+                Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD),
+            )));
+            for lang in app.languages.iter().take(5) {
+                lines.push(Line::from(Span::styled(
+                    format!("  {} ({} files)", lang.name, lang.files),
+                    Style::default().fg(theme::TEAL),
+                )));
+            }
+        }
+        frame.render_widget(Paragraph::new(lines), inner);
+    } else {
+        frame.render_widget(
+            Paragraph::new("No repo detected")
+                .style(Style::default().fg(theme::OVERLAY))
+                .alignment(Alignment::Center),
+            inner,
+        );
     }
 }
 

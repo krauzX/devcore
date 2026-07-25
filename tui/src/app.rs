@@ -4,9 +4,11 @@ use std::time::Duration;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use devcore_academic::{Course, Deadline, GradeEntry, SemesterStore};
-use devcore_challenges::{ChallengeEngine, OfflineProblem, ProblemPack};
+use devcore_challenges::{
+    ChallengeEngine, Difficulty, OfflineProblem, ProblemPack, ProjectEngine, ProjectPack,
+};
 use devcore_core::{DevCoreConfig, Store};
-use devcore_devtrack::{SkillProgress, Streak};
+use devcore_devtrack::{LanguageStat, RepoAnalysis, SkillAxis, SkillProgress, Streak};
 use ratatui::prelude::*;
 use ratatui::widgets::*;
 
@@ -49,10 +51,37 @@ impl Tab {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum InputMode {
+    Normal,
+    AddingXp,
+    AddingCourse,
+    AddingDeadline,
+    AddingGrade,
+    SelectingSemester,
+    ConfirmingInstall,
+    ConfirmingRemove,
+    ViewingDetail,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum XpField {
+    Axis,
+    Amount,
+    Reason,
+}
+
+pub(crate) struct InputField {
+    pub label: &'static str,
+    pub value: String,
+}
+
 pub struct App {
     should_quit: bool,
     active_tab: Tab,
     pub(crate) config: DevCoreConfig,
+    #[allow(dead_code)]
+    pub(crate) academic_store: SemesterStore,
     pub(crate) semesters: Vec<devcore_academic::Semester>,
     pub(crate) current_semester: Option<devcore_academic::Semester>,
     pub(crate) upcoming_deadlines: Vec<Deadline>,
@@ -62,8 +91,25 @@ pub struct App {
     pub(crate) total_credits: i32,
     pub(crate) streak: Option<Streak>,
     pub(crate) skill_progress: Vec<SkillProgress>,
-    pub(crate) packs: Vec<ProblemPack>,
+    pub(crate) repo_analysis: Option<RepoAnalysis>,
+    pub(crate) languages: Vec<LanguageStat>,
+    pub(crate) input_mode: InputMode,
+    pub(crate) xp_field: XpField,
+    pub(crate) xp_axis_index: usize,
+    pub(crate) xp_amount: String,
+    pub(crate) xp_reason: String,
+    pub(crate) input_fields: Vec<InputField>,
+    pub(crate) current_field: usize,
     #[allow(dead_code)]
+    pub(crate) field_cursor: usize,
+    pub(crate) semester_cursor: usize,
+    #[allow(dead_code)]
+    pub(crate) course_selector: usize,
+    #[allow(dead_code)]
+    pub(crate) grade_courses: Vec<Course>,
+    pub(crate) status_msg: Option<String>,
+    core_store: Store,
+    pub(crate) packs: Vec<ProblemPack>,
     pub(crate) installed_count: usize,
     #[allow(dead_code)]
     pub(crate) solved_count: usize,
@@ -71,6 +117,12 @@ pub struct App {
     pub(crate) offline_page: usize,
     pub(crate) offline_total_pages: usize,
     pub(crate) offline_total: usize,
+    pub(crate) selected_pack: Option<usize>,
+    pub(crate) selected_problem: Option<usize>,
+    pub(crate) difficulty_filter: Option<Difficulty>,
+    pub(crate) show_projects: bool,
+    pub(crate) projects: Vec<ProjectPack>,
+    pub(crate) selected_project: Option<usize>,
 }
 
 impl App {
@@ -105,6 +157,8 @@ impl App {
         });
 
         let streak = devcore_devtrack::compute_streak(project_root).ok();
+        let repo_analysis = devcore_devtrack::analyze_repo(project_root).ok();
+        let languages = devcore_devtrack::detect_languages(project_root);
 
         let core_store = Store::open(project_root)?;
         let skill_progress = {
@@ -130,10 +184,14 @@ impl App {
         let per_page = 20;
         let offline_result = engine.list_offline(None, 1, per_page);
 
+        let project_engine = ProjectEngine::new(project_root);
+        let projects = project_engine.list_available().to_vec();
+
         Ok(Self {
             should_quit: false,
             active_tab: Tab::Dashboard,
             config,
+            academic_store,
             semesters,
             current_semester,
             upcoming_deadlines,
@@ -143,6 +201,21 @@ impl App {
             total_credits,
             streak,
             skill_progress,
+            repo_analysis,
+            languages,
+            input_mode: InputMode::Normal,
+            xp_field: XpField::Axis,
+            xp_axis_index: 0,
+            xp_amount: String::new(),
+            xp_reason: String::new(),
+            input_fields: Vec::new(),
+            current_field: 0,
+            field_cursor: 0,
+            semester_cursor: 0,
+            course_selector: 0,
+            grade_courses: Vec::new(),
+            status_msg: None,
+            core_store,
             packs,
             installed_count,
             solved_count,
@@ -150,6 +223,12 @@ impl App {
             offline_page: offline_result.page,
             offline_total_pages: offline_result.total_pages,
             offline_total: offline_result.total,
+            selected_pack: None,
+            selected_problem: None,
+            difficulty_filter: None,
+            show_projects: false,
+            projects,
+            selected_project: None,
         })
     }
 
@@ -157,6 +236,40 @@ impl App {
         let exit_status = self.event_loop();
         ratatui::restore();
         exit_status
+    }
+
+    fn refresh_offline_problems(&mut self, difficulty: Option<&str>, page: usize) {
+        let engine = ChallengeEngine::new(std::path::Path::new("."));
+        let per_page = 20;
+        let result = engine.list_offline(difficulty, page, per_page);
+        self.offline_problems = result.problems;
+        self.offline_page = result.page;
+        self.offline_total_pages = result.total_pages;
+        self.offline_total = result.total;
+    }
+
+    fn refresh_packs(&mut self) {
+        let engine = ChallengeEngine::new(std::path::Path::new("."));
+        self.packs = engine.list_available().to_vec();
+        self.installed_count = engine.list_installed().len();
+    }
+
+    fn get_difficulty_str(&self) -> Option<&'static str> {
+        match self.difficulty_filter {
+            Some(Difficulty::Easy) => Some("easy"),
+            Some(Difficulty::Medium) => Some("medium"),
+            Some(Difficulty::Hard) => Some("hard"),
+            None => None,
+        }
+    }
+
+    fn all_problems(&self) -> Vec<(&ProblemPack, &devcore_challenges::Problem)> {
+        self.packs
+            .iter()
+            .flat_map(|pack| {
+                pack.problems.iter().map(move |problem| (pack, problem))
+            })
+            .collect()
     }
 
     fn event_loop(&mut self) -> Result<()> {
@@ -167,40 +280,20 @@ impl App {
             if event::poll(Duration::from_millis(250))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        match key.code {
-                            KeyCode::Char('q') | KeyCode::Esc => {
-                                self.should_quit = true;
+                        match self.input_mode {
+                            InputMode::Normal => self.handle_normal_input(key.code),
+                            InputMode::AddingXp => self.handle_adding_xp(key.code),
+                            InputMode::AddingCourse
+                            | InputMode::AddingDeadline
+                            | InputMode::AddingGrade => {
+                                self.handle_academic_input(key.code);
                             }
-                            KeyCode::Tab => {
-                                let tabs = Tab::all();
-                                let idx = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
-                                self.active_tab = tabs[(idx + 1) % tabs.len()];
+                            InputMode::SelectingSemester => {
+                                self.handle_semester_input(key.code);
                             }
-                            KeyCode::Char('1') => self.active_tab = Tab::Dashboard,
-                            KeyCode::Char('2') => self.active_tab = Tab::Academic,
-                            KeyCode::Char('3') => self.active_tab = Tab::Git,
-                            KeyCode::Char('4') => self.active_tab = Tab::Challenges,
-                            KeyCode::Char('n') if self.active_tab == Tab::Challenges => {
-                                let engine = ChallengeEngine::new(std::path::Path::new("."));
-                                let per_page = 20;
-                                let next_page = (self.offline_page + 1).min(self.offline_total_pages.max(1));
-                                let result = engine.list_offline(None, next_page, per_page);
-                                self.offline_problems = result.problems;
-                                self.offline_page = result.page;
-                                self.offline_total_pages = result.total_pages;
-                                self.offline_total = result.total;
-                            }
-                            KeyCode::Char('p') if self.active_tab == Tab::Challenges => {
-                                let engine = ChallengeEngine::new(std::path::Path::new("."));
-                                let per_page = 20;
-                                let prev_page = self.offline_page.saturating_sub(1).max(1);
-                                let result = engine.list_offline(None, prev_page, per_page);
-                                self.offline_problems = result.problems;
-                                self.offline_page = result.page;
-                                self.offline_total_pages = result.total_pages;
-                                self.offline_total = result.total;
-                            }
-                            _ => {}
+                            InputMode::ConfirmingInstall => self.handle_confirm_install(key.code),
+                            InputMode::ConfirmingRemove => self.handle_confirm_remove(key.code),
+                            InputMode::ViewingDetail => self.handle_viewing_detail(key.code),
                         }
                     }
                 }
@@ -211,6 +304,358 @@ impl App {
             }
         }
         Ok(())
+    }
+
+    fn handle_normal_input(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('q') => self.should_quit = true,
+            KeyCode::Esc => self.should_quit = true,
+            KeyCode::Tab => {
+                let tabs = Tab::all();
+                let idx = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
+                self.active_tab = tabs[(idx + 1) % tabs.len()];
+            }
+            KeyCode::Char('1') => self.active_tab = Tab::Dashboard,
+            KeyCode::Char('2') => self.active_tab = Tab::Academic,
+            KeyCode::Char('3') => self.active_tab = Tab::Git,
+            KeyCode::Char('4') => self.active_tab = Tab::Challenges,
+            _ if self.active_tab == Tab::Academic => self.handle_academic_trigger(code),
+            _ if self.active_tab == Tab::Challenges => self.handle_challenges_input(code),
+            _ if self.active_tab == Tab::Git => self.handle_git_input(code),
+            _ => {}
+        }
+    }
+
+    fn handle_academic_trigger(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('c') => {
+                self.input_mode = InputMode::AddingCourse;
+                self.input_fields = vec![
+                    InputField { label: "Name", value: String::new() },
+                    InputField { label: "Code", value: String::new() },
+                    InputField { label: "Credits", value: String::new() },
+                ];
+                self.current_field = 0;
+                self.status_msg = None;
+            }
+            KeyCode::Char('d') => {
+                self.input_mode = InputMode::AddingDeadline;
+                self.input_fields = vec![
+                    InputField { label: "Title", value: String::new() },
+                    InputField { label: "Due Date (YYYY-MM-DD)", value: String::new() },
+                ];
+                self.current_field = 0;
+                self.status_msg = None;
+            }
+            KeyCode::Char('g') => {
+                self.input_mode = InputMode::AddingGrade;
+                self.input_fields = vec![
+                    InputField { label: "Score", value: String::new() },
+                ];
+                self.current_field = 0;
+                self.status_msg = None;
+            }
+            KeyCode::Char('s') => {
+                self.input_mode = InputMode::SelectingSemester;
+                self.semester_cursor = 0;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_academic_input(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Esc => {
+                self.input_mode = InputMode::Normal;
+                self.status_msg = None;
+            }
+            KeyCode::Tab => {
+                if !self.input_fields.is_empty() {
+                    self.current_field = (self.current_field + 1) % self.input_fields.len();
+                }
+            }
+            KeyCode::Up => {
+                if self.current_field > 0 {
+                    self.current_field -= 1;
+                }
+            }
+            KeyCode::Down => {
+                if self.current_field + 1 < if self.input_fields.is_empty().not() { self.input_fields.len() } else { 0 } {
+                    self.current_field += 1;
+                }
+            }
+            KeyCode::Char(c) => {
+                if self.current_field < self.input_fields.len() {
+                    self.input_fields[self.current_field].value.push(c);
+                }
+            }
+            KeyCode::Backspace => {
+                if self.current_field < if self.input_fields.is_empty().not() { self.input_fields.len() } else { 0 } {
+                    self.input_fields[self.current_field].value.pop();
+                }
+            }
+            KeyCode::Enter => {
+                self.status_msg = Some("Added".to_string());
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_semester_input(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Esc => {
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Up => {
+                if self.semester_cursor > 0 {
+                    self.semester_cursor -= 1;
+                }
+            }
+            KeyCode::Down => {
+                if self.semester_cursor + 1 < self.semesters.len() {
+                    self.semester_cursor += 1;
+                }
+            }
+            KeyCode::Enter => {
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_git_input(&mut self, code: KeyCode) {
+        if let KeyCode::Char('x') = code {
+            self.input_mode = InputMode::AddingXp;
+            self.xp_field = XpField::Axis;
+            self.xp_axis_index = 0;
+            self.xp_amount.clear();
+            self.xp_reason.clear();
+        }
+    }
+
+    fn handle_adding_xp(&mut self, code: KeyCode) {
+        let axis_count = SkillAxis::all().len();
+        match code {
+            KeyCode::Esc => {
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Tab => {
+                self.xp_field = match self.xp_field {
+                    XpField::Axis => XpField::Amount,
+                    XpField::Amount => XpField::Reason,
+                    XpField::Reason => XpField::Axis,
+                };
+            }
+            KeyCode::Up => {
+                if self.xp_field == XpField::Axis {
+                    self.xp_axis_index = self.xp_axis_index.saturating_sub(1);
+                }
+            }
+            KeyCode::Down => {
+                if self.xp_field == XpField::Axis && self.xp_axis_index + 1 < axis_count {
+                    self.xp_axis_index += 1;
+                }
+            }
+            KeyCode::Char(c) => {
+                match self.xp_field {
+                    XpField::Amount => {
+                        if c.is_ascii_digit() {
+                            self.xp_amount.push(c);
+                        }
+                    }
+                    XpField::Reason => {
+                        self.xp_reason.push(c);
+                    }
+                    XpField::Axis => {}
+                }
+            }
+            KeyCode::Backspace => {
+                match self.xp_field {
+                    XpField::Amount => { self.xp_amount.pop(); }
+                    XpField::Reason => { self.xp_reason.pop(); }
+                    XpField::Axis => {}
+                }
+            }
+            KeyCode::Enter => {
+                if let Ok(amount) = self.xp_amount.parse::<u32>() {
+                    if amount > 0 && !self.xp_reason.is_empty() {
+                        let axis = SkillAxis::all()[self.xp_axis_index];
+                        let reason = self.xp_reason.clone();
+                        if let Ok(conn) = self.core_store.conn() {
+                            if let Ok(updated) = devcore_devtrack::add_xp(&conn, axis, amount, &reason) {
+                                self.skill_progress.retain(|s| s.axis != axis);
+                                self.skill_progress.push(updated);
+                            }
+                        }
+                    }
+                }
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_challenges_input(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('n') => {
+                let next_page = (self.offline_page + 1).min(self.offline_total_pages.max(1));
+                self.refresh_offline_problems(self.get_difficulty_str(), next_page);
+            }
+            KeyCode::Char('p') if !self.show_projects => {
+                let prev_page = self.offline_page.saturating_sub(1).max(1);
+                self.refresh_offline_problems(self.get_difficulty_str(), prev_page);
+            }
+            KeyCode::Char('i') => {
+                if let Some(idx) = self.selected_pack {
+                    if idx < self.packs.len() {
+                        self.input_mode = InputMode::ConfirmingInstall;
+                    }
+                }
+            }
+            KeyCode::Char('r') => {
+                if let Some(idx) = self.selected_pack {
+                    if idx < self.packs.len() {
+                        self.input_mode = InputMode::ConfirmingRemove;
+                    }
+                }
+            }
+            KeyCode::Enter => {
+                if self.show_projects {
+                } else if self.selected_problem.is_some() {
+                    self.input_mode = InputMode::ViewingDetail;
+                }
+            }
+            KeyCode::Char('e') => {
+                self.difficulty_filter = Some(Difficulty::Easy);
+                self.refresh_offline_problems(Some("easy"), 1);
+            }
+            KeyCode::Char('m') => {
+                self.difficulty_filter = Some(Difficulty::Medium);
+                self.refresh_offline_problems(Some("medium"), 1);
+            }
+            KeyCode::Char('h') => {
+                self.difficulty_filter = Some(Difficulty::Hard);
+                self.refresh_offline_problems(Some("hard"), 1);
+            }
+            KeyCode::Char('a') => {
+                self.difficulty_filter = None;
+                self.refresh_offline_problems(None, 1);
+            }
+            KeyCode::Char('p') if self.show_projects => {
+                self.show_projects = false;
+                self.selected_project = None;
+            }
+            KeyCode::Char('o') => {
+                self.show_projects = !self.show_projects;
+                if !self.show_projects {
+                    self.selected_project = None;
+                }
+            }
+            KeyCode::Up => {
+                if self.show_projects {
+                    if let Some(ref mut idx) = self.selected_project {
+                        *idx = idx.saturating_sub(1);
+                    } else if !self.projects.is_empty() {
+                        self.selected_project = Some(0);
+                    }
+                } else if let Some(ref mut idx) = self.selected_pack {
+                    *idx = idx.saturating_sub(1);
+                } else if !self.packs.is_empty() {
+                    self.selected_pack = Some(0);
+                }
+            }
+            KeyCode::Down => {
+                if self.show_projects {
+                    let len = self.projects.len();
+                    if let Some(ref mut idx) = self.selected_project {
+                        if *idx + 1 < len {
+                            *idx += 1;
+                        }
+                    } else if !self.projects.is_empty() {
+                        self.selected_project = Some(0);
+                    }
+                } else {
+                    let len = self.packs.len();
+                    if let Some(ref mut idx) = self.selected_pack {
+                        if *idx + 1 < len {
+                            *idx += 1;
+                        }
+                    } else if !self.packs.is_empty() {
+                        self.selected_pack = Some(0);
+                    }
+                }
+            }
+            KeyCode::Left => {
+                if !self.show_projects {
+                    if let Some(ref mut idx) = self.selected_problem {
+                        *idx = idx.saturating_sub(1);
+                    }
+                }
+            }
+            KeyCode::Right => {
+                if !self.show_projects {
+                    let problems_len = self.all_problems().len();
+                    if let Some(ref mut idx) = self.selected_problem {
+                        if *idx + 1 < problems_len {
+                            *idx += 1;
+                        }
+                    } else if problems_len > 0 {
+                        self.selected_problem = Some(0);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_confirm_install(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                if let Some(idx) = self.selected_pack {
+                    if idx < self.packs.len() {
+                        let pack_id = self.packs[idx].id.clone();
+                        let mut engine = ChallengeEngine::new(std::path::Path::new("."));
+                        let _ = engine.install_pack(&pack_id);
+                        self.refresh_packs();
+                    }
+                }
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_confirm_remove(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                if let Some(idx) = self.selected_pack {
+                    if idx < self.packs.len() {
+                        let pack_id = self.packs[idx].id.clone();
+                        let mut engine = ChallengeEngine::new(std::path::Path::new("."));
+                        let _ = engine.remove_pack(&pack_id);
+                        self.refresh_packs();
+                    }
+                }
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_viewing_detail(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Esc | KeyCode::Enter => {
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
     }
 
     fn draw(&self, frame: &mut Frame) {
@@ -260,14 +705,149 @@ impl App {
             Tab::Challenges => render_challenges_tab(frame, chunks[1], self),
         }
 
-        widgets::status_bar(
-            frame,
-            chunks[2],
-            &[
-                widgets::KeyBinding { key: "1-4", label: "Tab", color: theme::MAUVE },
-                widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
-                widgets::KeyBinding { key: "Tab", label: "Next", color: theme::BLUE },
+        let keybindings: Vec<widgets::KeyBinding> = match self.input_mode {
+            InputMode::Normal => match self.active_tab {
+                Tab::Academic => vec![
+                    widgets::KeyBinding { key: "c", label: "Course", color: theme::GREEN },
+                    widgets::KeyBinding { key: "d", label: "Deadline", color: theme::YELLOW },
+                    widgets::KeyBinding { key: "g", label: "Grade", color: theme::BLUE },
+                    widgets::KeyBinding { key: "s", label: "Semester", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+                _ => vec![
+                    widgets::KeyBinding { key: "1-4", label: "Tab", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "Tab", label: "Next", color: theme::BLUE },
+                    widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
+                ],
+            },
+            _ => vec![
+                widgets::KeyBinding { key: "Tab", label: "Field", color: theme::BLUE },
+                widgets::KeyBinding { key: "Enter", label: "Submit", color: theme::GREEN },
+                widgets::KeyBinding { key: "Esc", label: "Cancel", color: theme::RED },
             ],
-        );
+        };
+        widgets::status_bar(frame, chunks[2], &keybindings);
+
+        match self.input_mode {
+            InputMode::ConfirmingInstall => {
+                if let Some(idx) = self.selected_pack {
+                    if idx < self.packs.len() {
+                        let pack = &self.packs[idx];
+                        widgets::render_confirm_popup(
+                            frame,
+                            area,
+                            &format!("Install pack '{}'?", pack.name),
+                            "Press Y to confirm, N/Esc to cancel",
+                        );
+                    }
+                }
+            }
+            InputMode::ConfirmingRemove => {
+                if let Some(idx) = self.selected_pack {
+                    if idx < self.packs.len() {
+                        let pack = &self.packs[idx];
+                        widgets::render_confirm_popup(
+                            frame,
+                            area,
+                            &format!("Remove pack '{}'?", pack.name),
+                            "Press Y to confirm, N/Esc to cancel",
+                        );
+                    }
+                }
+            }
+            InputMode::ViewingDetail => {
+                if !self.show_projects {
+                    let problems = self.all_problems();
+                    if let Some(idx) = self.selected_problem {
+                        if idx < problems.len() {
+                            let (_pack, problem) = problems[idx];
+                            widgets::render_problem_detail(frame, area, problem);
+                        }
+                    }
+                }
+            }
+            InputMode::AddingXp => {
+                let axes: Vec<&str> = SkillAxis::all().iter().map(|a| a.as_str()).collect();
+                widgets::render_add_xp_popup(
+                    frame,
+                    area,
+                    &axes,
+                    self.xp_axis_index,
+                    &self.xp_amount,
+                    &self.xp_reason,
+                    self.xp_field,
+                );
+            }
+            InputMode::AddingCourse | InputMode::AddingDeadline | InputMode::AddingGrade => {
+                let title = match self.input_mode {
+                    InputMode::AddingCourse => "Add Course",
+                    InputMode::AddingDeadline => "Add Deadline",
+                    InputMode::AddingGrade => "Add Grade",
+                    _ => unreachable!(),
+                };
+                let labels: Vec<&str> = self.input_fields.iter().map(|f| f.label).collect();
+                let values: Vec<String> = self.input_fields.iter().map(|f| f.value.clone()).collect();
+                widgets::render_input_form(
+                    frame,
+                    area,
+                    title,
+                    &labels,
+                    &values,
+                    self.current_field,
+                    self.status_msg.as_deref(),
+                );
+            }
+            InputMode::SelectingSemester => {
+                let num_sems = self.semesters.len().min(10) as u16;
+                let form_height = num_sems + 4;
+                let form_width = 50.min(area.width.saturating_sub(4));
+                if form_height > area.height || form_width < 20 {
+                    return;
+                }
+                let x = area.x + (area.width.saturating_sub(form_width)) / 2;
+                let y = area.y + area.height.saturating_sub(form_height);
+                let form_area = Rect::new(x, y, form_width, form_height);
+                let mut lines: Vec<Line> = Vec::new();
+                for (i, sem) in self.semesters.iter().take(10).enumerate() {
+                    let marker = if i == self.semester_cursor { " ▸ " } else { "   " };
+                    let style = if i == self.semester_cursor {
+                        Style::default().fg(theme::YELLOW).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(theme::TEXT)
+                    };
+                    lines.push(Line::from(Span::styled(
+                        format!("{}{}", marker, sem.name),
+                        style,
+                    )));
+                }
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    "  ↑↓: navigate │ Enter: select │ Esc: cancel",
+                    Style::default().fg(theme::SUBTEXT),
+                )));
+                let block = Block::default()
+                    .title(" Select Semester ")
+                    .title_style(Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(theme::MAUVE))
+                    .style(Style::default().bg(theme::SURFACE));
+                let inner_block = block.inner(form_area);
+                frame.render_widget(Clear, form_area);
+                frame.render_widget(block, form_area);
+                frame.render_widget(Paragraph::new(lines), inner_block);
+            }
+            InputMode::Normal => {}
+        }
+    }
+}
+
+trait BoolHelper {
+    fn not(self) -> bool;
+}
+
+impl BoolHelper for bool {
+    fn not(self) -> bool {
+        !self
     }
 }

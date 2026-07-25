@@ -16,3 +16,4 @@ serde_json.workspace = true
 anyhow.workspace = true
 git2.workspace = true
 dirs.workspace = true
+uuid.workspace = true

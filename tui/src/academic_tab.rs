@@ -28,11 +28,18 @@ fn render_stats_bar(frame: &mut Frame, area: Rect, app: &App) {
         .split(area);
 
     let ratio = app.sgpa.map(|s| s / 10.0).unwrap_or(0.0);
-    let label = app.sgpa.map(|s| format!("{:.2}", s)).unwrap_or_else(|| "--".to_string());
+    let label = app
+        .sgpa
+        .map(|s| format!("{:.2}", s))
+        .unwrap_or_else(|| "--".to_string());
     let gauge = widgets::progress_gauge(&label, ratio, theme::GREEN).block(
         Block::default()
             .title(" SGPA ")
-            .title_style(Style::default().fg(theme::MAUVE).add_modifier(Modifier::BOLD))
+            .title_style(
+                Style::default()
+                    .fg(theme::MAUVE)
+                    .add_modifier(Modifier::BOLD),
+            )
             .border_type(BorderType::Rounded)
             .borders(Borders::ALL)
             .border_style(Style::default().fg(theme::OVERLAY))
@@ -54,15 +61,19 @@ fn render_stats_bar(frame: &mut Frame, area: Rect, app: &App) {
     );
 
     frame.render_widget(
-        widgets::stat_row("Credits: ", &app.total_credits.to_string(), theme::TEAL)
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .border_type(BorderType::Rounded)
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(theme::OVERLAY))
-                    .style(Style::default().bg(theme::SURFACE)),
-            ),
+        widgets::stat_row(
+            "Credits: ",
+            &app.total_credits.to_string(),
+            theme::TEAL,
+        )
+        .alignment(Alignment::Center)
+        .block(
+            Block::default()
+                .border_type(BorderType::Rounded)
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().bg(theme::SURFACE)),
+        ),
         chunks[2],
     );
 }
@@ -79,31 +90,54 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_semester_panel(frame: &mut Frame, area: Rect, app: &App) {
-    let items: Vec<ListItem> = app.semesters.iter().map(|sem| {
-        let marker = if sem.is_current { " > " } else { "   " };
-        let style = if sem.is_current {
-            Style::default().fg(theme::YELLOW).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(theme::TEXT)
-        };
-        ListItem::new(Line::from(Span::styled(format!("{}{}", marker, sem.name), style)))
-    }).collect();
+    let items: Vec<ListItem> = app
+        .semesters
+        .iter()
+        .map(|sem| {
+            let marker = if sem.is_current { " > " } else { "   " };
+            let style = if sem.is_current {
+                Style::default()
+                    .fg(theme::YELLOW)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(theme::TEXT)
+            };
+            ListItem::new(Line::from(Span::styled(
+                format!("{}{}", marker, sem.name),
+                style,
+            )))
+        })
+        .collect();
 
-    frame.render_widget(List::new(items).block(
-        Block::default()
-            .title(" Semesters ")
-            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
-            .border_type(BorderType::Rounded)
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(theme::OVERLAY))
-            .style(Style::default().bg(theme::SURFACE)),
-    ), area);
+    frame.render_widget(
+        List::new(items).block(
+            Block::default()
+                .title(" Semesters ")
+                .title_style(
+                    Style::default()
+                        .fg(theme::BLUE)
+                        .add_modifier(Modifier::BOLD),
+                )
+                .border_type(BorderType::Rounded)
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme::OVERLAY))
+                .style(Style::default().bg(theme::SURFACE)),
+        ),
+        area,
+    );
 }
 
 fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
     let block = Block::default()
-        .title(format!(" Upcoming Deadlines ({}) ", app.upcoming_deadlines.len()))
-        .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+        .title(format!(
+            " Upcoming Deadlines ({}) ",
+            app.upcoming_deadlines.len()
+        ))
+        .title_style(
+            Style::default()
+                .fg(theme::BLUE)
+                .add_modifier(Modifier::BOLD),
+        )
         .border_type(BorderType::Rounded)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme::OVERLAY))
@@ -121,10 +155,14 @@ fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
     }
 
     let today = chrono::Local::now().naive_local().date();
-    let items: Vec<ListItem> = app.upcoming_deadlines.iter().map(|d| {
-        let days = (d.due_date - today).num_days();
-        widgets::deadline_item(&d.title, days)
-    }).collect();
+    let items: Vec<ListItem> = app
+        .upcoming_deadlines
+        .iter()
+        .map(|d| {
+            let days = (d.due_date - today).num_days();
+            widgets::deadline_item(&d.title, days)
+        })
+        .collect();
 
     frame.render_widget(List::new(items).block(block), area);
 }
