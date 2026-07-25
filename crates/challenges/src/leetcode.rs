@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::{Context, Result};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
@@ -187,6 +189,8 @@ impl LeetCodeClient {
     pub fn new() -> Result<Self, anyhow::Error> {
         let client = Client::builder()
             .user_agent("devcore/0.1")
+            .timeout(Duration::from_secs(10))
+            .connect_timeout(Duration::from_secs(5))
             .build()
             .context("failed to build HTTP client")?;
         Ok(Self { client })
@@ -402,21 +406,40 @@ fn html_to_text(html: &str) -> String {
         if in_entity {
             if ch == ';' {
                 in_entity = false;
-                let replacement = match entity_buf.as_str() {
-                    "amp" => "&",
-                    "lt" => "<",
-                    "gt" => ">",
-                    "quot" => "\"",
-                    "apos" => "'",
-                    "nbsp" => " ",
-                    "le" => "≤",
-                    "ge" => "≥",
-                    "times" => "×",
-                    "divide" => "÷",
-                    _ => {
-                        out.push('&');
-                        out.push_str(&entity_buf);
-                        ";"
+                let replacement = if let Some(digit_str) = entity_buf.strip_prefix('#') {
+                    let code = if digit_str.starts_with('x') || digit_str.starts_with('X') {
+                        u32::from_str_radix(&digit_str[1..], 16).ok()
+                    } else {
+                        digit_str.parse::<u32>().ok()
+                    };
+                    match code.and_then(std::char::from_u32) {
+                        Some(c) => {
+                            out.push(c);
+                            continue;
+                        }
+                        None => {
+                            out.push('&');
+                            out.push_str(&entity_buf);
+                            ";"
+                        }
+                    }
+                } else {
+                    match entity_buf.as_str() {
+                        "amp" => "&",
+                        "lt" => "<",
+                        "gt" => ">",
+                        "quot" => "\"",
+                        "apos" => "'",
+                        "nbsp" => " ",
+                        "le" => "≤",
+                        "ge" => "≥",
+                        "times" => "×",
+                        "divide" => "÷",
+                        _ => {
+                            out.push('&');
+                            out.push_str(&entity_buf);
+                            ";"
+                        }
                     }
                 };
                 out.push_str(replacement);
@@ -427,5 +450,11 @@ fn html_to_text(html: &str) -> String {
         }
         out.push(ch);
     }
+
+    if in_entity {
+        out.push('&');
+        out.push_str(&entity_buf);
+    }
+
     out
 }

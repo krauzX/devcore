@@ -130,8 +130,9 @@ fn render_semester_panel(frame: &mut Frame, area: Rect, app: &App) {
 fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
     let block = Block::default()
         .title(format!(
-            " Upcoming Deadlines ({}) ",
-            app.upcoming_deadlines.len()
+            " Upcoming Deadlines ({}) — {}d window ",
+            app.upcoming_deadlines.len(),
+            app.deadline_days
         ))
         .title_style(
             Style::default()
@@ -145,7 +146,7 @@ fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
 
     if app.upcoming_deadlines.is_empty() {
         frame.render_widget(
-            Paragraph::new("No upcoming deadlines in the next 30 days")
+            Paragraph::new(format!("No upcoming deadlines in the next {} days", app.deadline_days))
                 .style(Style::default().fg(theme::OVERLAY))
                 .alignment(Alignment::Center)
                 .block(block),
@@ -158,9 +159,24 @@ fn render_deadline_panel(frame: &mut Frame, area: Rect, app: &App) {
     let items: Vec<ListItem> = app
         .upcoming_deadlines
         .iter()
-        .map(|d| {
+        .enumerate()
+        .map(|(i, d)| {
             let days = (d.due_date - today).num_days();
-            widgets::deadline_item(&d.title, days)
+            let selected = app.selected_deadline_index == Some(i);
+            if selected {
+                let urgency = devcore_academic::UrgencyLevel::from_days_left(days);
+                let color = widgets::urgency_color(urgency);
+                ListItem::new(Line::from(vec![
+                    Span::styled(
+                        format!("▸ {} ({}d) ", d.title, days),
+                        Style::default()
+                            .fg(color)
+                            .add_modifier(Modifier::BOLD | Modifier::REVERSED),
+                    ),
+                ]))
+            } else {
+                widgets::deadline_item(&d.title, days)
+            }
         })
         .collect();
 

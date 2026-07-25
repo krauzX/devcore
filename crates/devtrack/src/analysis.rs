@@ -151,12 +151,23 @@ fn collect_files_from_tree(repo: &Repository, tree: &git2::Tree, files: &mut Has
     }
 }
 
+const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", "__pycache__"];
+const MAX_FILE_SIZE: u64 = 1024 * 1024; // 1MB
+
 pub fn detect_languages(path: &Path) -> Vec<LanguageStat> {
     let mut stats: HashMap<String, (usize, usize)> = HashMap::new();
 
     for entry in WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
+        .filter(|e| {
+            !e.path().components().any(|c| {
+                c.as_os_str()
+                    .to_str()
+                    .map(|s| SKIP_DIRS.contains(&s))
+                    .unwrap_or(false)
+            })
+        })
         .filter(|e| e.file_type().is_file())
     {
         let file_path = entry.path();
@@ -170,8 +181,13 @@ pub fn detect_languages(path: &Path) -> Vec<LanguageStat> {
                 .entry(lang.to_string())
                 .or_insert((0, 0));
             entry.0 += 1;
+            if let Ok(metadata) = std::fs::metadata(file_path) {
+                if metadata.len() > MAX_FILE_SIZE {
+                    continue;
+                }
+            }
             if let Ok(content) = std::fs::read_to_string(file_path) {
-                entry.1 += content.lines().count();
+                entry.1 += content.bytes().filter(|&b| b == b'\n').count();
             }
         }
     }

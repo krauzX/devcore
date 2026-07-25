@@ -6,6 +6,9 @@ pub struct GradeEntry {
     pub course_id: String,
     pub semester_id: String,
     pub grade: String,
+    pub exam_name: Option<String>,
+    pub score: Option<f64>,
+    pub total: Option<f64>,
 }
 
 pub fn grade_to_points(grade: &str) -> f64 {
@@ -16,6 +19,7 @@ pub fn grade_to_points(grade: &str) -> f64 {
         "B+" => 7.0,
         "B" => 6.0,
         "C" => 5.0,
+        "D" => 4.0,
         "F" => 0.0,
         _ => 0.0,
     }
@@ -77,8 +81,16 @@ impl GradeEntry {
 
     pub fn add(conn: &Connection, entry: &GradeEntry) -> Result<(), rusqlite::Error> {
         conn.execute(
-            "INSERT INTO grades (id, course_id, semester_id, grade) VALUES (?1, ?2, ?3, ?4)",
-            params![entry.id, entry.course_id, entry.semester_id, entry.grade],
+            "INSERT INTO grades (id, course_id, semester_id, grade, exam_name, score, total) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                entry.id,
+                entry.course_id,
+                entry.semester_id,
+                entry.grade,
+                entry.exam_name,
+                entry.score,
+                entry.total,
+            ],
         )?;
         Ok(())
     }

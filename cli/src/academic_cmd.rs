@@ -310,6 +310,9 @@ fn run_grade(
         course_id: course.id.clone(),
         semester_id: semester_id.clone(),
         grade: grade_str.to_string(),
+        exam_name: Some(exam.to_string()),
+        score: Some(obtained),
+        total: Some(total),
     };
     GradeEntry::add(&conn, &entry)?;
 

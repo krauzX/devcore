@@ -13,9 +13,9 @@ pub struct DevCoreConfig {
 impl Default for DevCoreConfig {
     fn default() -> Self {
         Self {
-            institution: "IIIT Kottayam".into(),
-            program: "B.Tech CSE".into(),
-            batch: "2023".into(),
+            institution: String::new(),
+            program: String::new(),
+            batch: String::new(),
             total_semesters: 8,
         }
     }
@@ -50,9 +50,9 @@ mod tests {
     #[test]
     fn test_config_default() {
         let config = DevCoreConfig::default();
-        assert_eq!(config.institution, "IIIT Kottayam");
-        assert_eq!(config.program, "B.Tech CSE");
-        assert_eq!(config.batch, "2023");
+        assert_eq!(config.institution, "");
+        assert_eq!(config.program, "");
+        assert_eq!(config.batch, "");
         assert_eq!(config.total_semesters, 8);
     }
 

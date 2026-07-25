@@ -50,9 +50,8 @@ fn difficulty_str_color(diff: &str) -> Color {
     }
 }
 
-fn is_pack_installed(_app: &App, pack_id: &str) -> bool {
-    let engine = devcore_challenges::ChallengeEngine::new(std::path::Path::new("."));
-    engine.list_installed().iter().any(|p| p.id == pack_id)
+fn is_pack_installed(app: &App, pack_id: &str) -> bool {
+    app.installed_pack_ids.iter().any(|id| id == pack_id)
 }
 
 fn render_packs_panel(frame: &mut Frame, area: Rect, app: &App) {

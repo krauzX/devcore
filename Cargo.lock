@@ -643,6 +643,7 @@ dependencies = [
  "chrono",
  "devcore-core",
  "dirs 5.0.1",
+ "once_cell",
  "reqwest",
  "rusqlite",
  "serde",

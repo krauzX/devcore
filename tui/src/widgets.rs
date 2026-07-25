@@ -4,7 +4,7 @@ use ratatui::widgets::*;
 use crate::app::XpField;
 use crate::theme;
 use devcore_academic::UrgencyLevel;
-use devcore_challenges::Problem;
+use devcore_challenges::{Problem, ProjectPack};
 
 pub struct KeyBinding {
     pub key: &'static str,
@@ -373,11 +373,103 @@ pub fn render_problem_detail(frame: &mut Frame, area: Rect, problem: &Problem) {
     }
 
     let footer = Paragraph::new(Line::from(Span::styled(
+        " [a] attempt | [h] hint | Esc close ",
+        Style::default().fg(theme::SUBTEXT),
+    )))
+    .alignment(Alignment::Center);
+    frame.render_widget(footer, chunks[2]);
+}
+
+pub fn render_project_detail(frame: &mut Frame, area: Rect, project: &ProjectPack) {
+    let popup_width = (area.width as usize).clamp(50, 90) as u16;
+    let popup_height = (area.height as usize).clamp(15, 35) as u16;
+    let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
+    let y = area.y + (area.height.saturating_sub(popup_height)) / 2;
+    let popup_area = Rect::new(x, y, popup_width, popup_height);
+
+    let block = Block::default()
+        .title(format!(" {} ", project.name))
+        .title_style(
+            Style::default()
+                .fg(theme::BLUE)
+                .add_modifier(Modifier::BOLD),
+        )
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(theme::BLUE))
+        .style(Style::default().bg(theme::SURFACE));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(block, popup_area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(3),
+            Constraint::Length(1),
+            Constraint::Min(2),
+        ])
+        .split(inner);
+
+    let diff_color = match project.difficulty.as_str() {
+        "easy" => theme::GREEN,
+        "medium" => theme::YELLOW,
+        "hard" => theme::RED,
+        _ => theme::SUBTEXT,
+    };
+
+    let header = Paragraph::new(Line::from(vec![
+        Span::styled(
+            format!("[{}] ", project.difficulty),
+            Style::default()
+                .fg(diff_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("{} ", project.language),
+            Style::default().fg(theme::MAUVE),
+        ),
+        Span::styled(
+            format!("{} stages", project.stages.len()),
+            Style::default().fg(theme::SUBTEXT),
+        ),
+    ]));
+    frame.render_widget(header, chunks[0]);
+
+    let desc = Paragraph::new(project.description.as_str())
+        .style(Style::default().fg(theme::TEXT))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(desc, chunks[1]);
+
+    let footer = Paragraph::new(Line::from(Span::styled(
         " Press Esc to close ",
         Style::default().fg(theme::SUBTEXT),
     )))
     .alignment(Alignment::Center);
     frame.render_widget(footer, chunks[2]);
+
+    if !project.readme.is_empty() {
+        let readme_text = if project.readme.len() > 500 {
+            format!("{}...", &project.readme[..500])
+        } else {
+            project.readme.clone()
+        };
+        let readme_block = Block::default()
+            .title(" Readme ")
+            .title_style(
+                Style::default()
+                    .fg(theme::TEAL)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(theme::OVERLAY));
+        let readme = Paragraph::new(readme_text.as_str())
+            .style(Style::default().fg(theme::TEXT))
+            .wrap(Wrap { trim: false });
+        frame.render_widget(readme.block(readme_block), chunks[3]);
+    }
 }
 
 pub(crate) fn render_add_xp_popup(

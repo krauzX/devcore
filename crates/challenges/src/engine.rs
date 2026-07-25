@@ -1,4 +1,5 @@
 use crate::pack::{builtin_packs, Difficulty, Problem, ProblemPack};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -98,6 +99,39 @@ pub struct ChallengeEngine {
     installed: Vec<ProblemPack>,
     packs_dir: PathBuf,
 }
+
+static OFFLINE_PROBLEMS: Lazy<Vec<OfflineProblem>> = Lazy::new(|| {
+    let data = include_str!("../data/leetcode_official.json");
+    let wrapper: OfflineWrapper = serde_json::from_str(data).unwrap_or(OfflineWrapper { stat_status_pairs: None });
+    let pairs = wrapper.stat_status_pairs.unwrap_or_default();
+    let mut problems: Vec<OfflineProblem> = Vec::with_capacity(pairs.len());
+    for pair in pairs {
+        let stat = match pair.stat {
+            Some(s) => s,
+            None => continue,
+        };
+        let diff = pair.difficulty.as_ref().and_then(|d| d.level);
+        let difficulty = diff
+            .and_then(Difficulty::from_level)
+            .unwrap_or(Difficulty::Easy);
+        let submitted = stat.total_submitted.unwrap_or(0);
+        let acs = stat.total_acs.unwrap_or(0);
+        let acceptance = if submitted > 0 {
+            (acs as f64 / submitted as f64) * 100.0
+        } else {
+            0.0
+        };
+        problems.push(OfflineProblem {
+            fid: stat.frontend_question_id.unwrap_or(0),
+            title: stat.question__title.unwrap_or_default(),
+            slug: stat.question__title_slug.unwrap_or_default(),
+            difficulty,
+            acceptance,
+            is_premium: pair.paid_only.unwrap_or(false),
+        });
+    }
+    problems
+});
 
 impl ChallengeEngine {
     pub fn new(data_dir: &Path) -> Self {
@@ -258,36 +292,7 @@ impl ChallengeEngine {
     }
 
     pub fn load_offline_problems(&self) -> Vec<OfflineProblem> {
-        let data = include_str!("../data/leetcode_official.json");
-        let wrapper: OfflineWrapper = serde_json::from_str(data).unwrap_or(OfflineWrapper { stat_status_pairs: None });
-        let pairs = wrapper.stat_status_pairs.unwrap_or_default();
-        let mut problems: Vec<OfflineProblem> = Vec::with_capacity(pairs.len());
-        for pair in pairs {
-            let stat = match pair.stat {
-                Some(s) => s,
-                None => continue,
-            };
-            let diff = pair.difficulty.as_ref().and_then(|d| d.level);
-            let difficulty = diff
-                .and_then(Difficulty::from_level)
-                .unwrap_or(Difficulty::Easy);
-            let submitted = stat.total_submitted.unwrap_or(0);
-            let acs = stat.total_acs.unwrap_or(0);
-            let acceptance = if submitted > 0 {
-                (acs as f64 / submitted as f64) * 100.0
-            } else {
-                0.0
-            };
-            problems.push(OfflineProblem {
-                fid: stat.frontend_question_id.unwrap_or(0),
-                title: stat.question__title.unwrap_or_default(),
-                slug: stat.question__title_slug.unwrap_or_default(),
-                difficulty,
-                acceptance,
-                is_premium: pair.paid_only.unwrap_or(false),
-            });
-        }
-        problems
+        OFFLINE_PROBLEMS.clone()
     }
 
     pub fn list_offline(

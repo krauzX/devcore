@@ -66,6 +66,7 @@ impl TrayApp {
     fn load_stats(&self) -> DailyStats {
         let (deadlines_today, next_deadline, sgpa) =
             SemesterStore::open(&self.project_root)
+                .map_err(|e| eprintln!("tray: {}", e))
                 .ok()
                 .and_then(|s| {
                     let c = s.conn().ok()?;
@@ -80,7 +81,10 @@ impl TrayApp {
                 })
                 .unwrap_or((0, None, None));
 
-        let streak_days = compute_streak(&self.project_root).map(|s| s.current).unwrap_or(0);
+        let streak_days = compute_streak(&self.project_root)
+            .map(|s| s.current)
+            .map_err(|e| eprintln!("tray: {}", e))
+            .unwrap_or(0);
 
         DailyStats { deadlines_today, next_deadline, streak_days, sgpa }
     }

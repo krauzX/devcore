@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::Result;
@@ -62,6 +62,7 @@ pub(crate) enum InputMode {
     ConfirmingInstall,
     ConfirmingRemove,
     ViewingDetail,
+    ViewingProjectDetail,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +80,7 @@ pub(crate) struct InputField {
 pub struct App {
     should_quit: bool,
     active_tab: Tab,
+    project_root: PathBuf,
     pub(crate) config: DevCoreConfig,
     #[allow(dead_code)]
     pub(crate) academic_store: SemesterStore,
@@ -94,6 +96,8 @@ pub struct App {
     pub(crate) repo_analysis: Option<RepoAnalysis>,
     pub(crate) languages: Vec<LanguageStat>,
     pub(crate) input_mode: InputMode,
+    pub(crate) deadline_days: u32,
+    pub(crate) selected_deadline_index: Option<usize>,
     pub(crate) xp_field: XpField,
     pub(crate) xp_axis_index: usize,
     pub(crate) xp_amount: String,
@@ -123,6 +127,7 @@ pub struct App {
     pub(crate) show_projects: bool,
     pub(crate) projects: Vec<ProjectPack>,
     pub(crate) selected_project: Option<usize>,
+    pub(crate) installed_pack_ids: Vec<String>,
 }
 
 impl App {
@@ -136,9 +141,10 @@ impl App {
             let conn = academic_store.conn().ok()?;
             GradeEntry::compute_sgpa(&conn, &s.id)
         });
+        let deadline_days = 30u32;
         let upcoming_deadlines = current_semester.as_ref().and_then(|_| {
             let conn = academic_store.conn().ok()?;
-            Some(Deadline::upcoming(&conn, 30).unwrap_or_default())
+            Some(Deadline::upcoming(&conn, deadline_days as i64).unwrap_or_default())
         }).unwrap_or_default();
 
         let (course_count, total_credits) = current_semester.as_ref().map(|s| {
@@ -170,6 +176,7 @@ impl App {
         let engine = ChallengeEngine::new(project_root);
         let packs = engine.list_available().to_vec();
         let installed_count = engine.list_installed().len();
+        let installed_pack_ids: Vec<String> = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
         let solved_count = {
             let conn = core_store.conn()?;
             devcore_challenges::progress::init_challenge_schema(&conn).ok();
@@ -190,6 +197,7 @@ impl App {
         Ok(Self {
             should_quit: false,
             active_tab: Tab::Dashboard,
+            project_root: project_root.to_path_buf(),
             config,
             academic_store,
             semesters,
@@ -204,6 +212,8 @@ impl App {
             repo_analysis,
             languages,
             input_mode: InputMode::Normal,
+            deadline_days: 30,
+            selected_deadline_index: None,
             xp_field: XpField::Axis,
             xp_axis_index: 0,
             xp_amount: String::new(),
@@ -229,6 +239,7 @@ impl App {
             show_projects: false,
             projects,
             selected_project: None,
+            installed_pack_ids,
         })
     }
 
@@ -238,8 +249,16 @@ impl App {
         exit_status
     }
 
+    fn refresh_deadlines(&mut self) {
+        self.upcoming_deadlines = self.current_semester.as_ref().and_then(|_| {
+            let conn = self.academic_store.conn().ok()?;
+            Some(Deadline::upcoming(&conn, self.deadline_days as i64).unwrap_or_default())
+        }).unwrap_or_default();
+        self.selected_deadline_index = None;
+    }
+
     fn refresh_offline_problems(&mut self, difficulty: Option<&str>, page: usize) {
-        let engine = ChallengeEngine::new(std::path::Path::new("."));
+        let engine = ChallengeEngine::new(&self.project_root);
         let per_page = 20;
         let result = engine.list_offline(difficulty, page, per_page);
         self.offline_problems = result.problems;
@@ -249,9 +268,10 @@ impl App {
     }
 
     fn refresh_packs(&mut self) {
-        let engine = ChallengeEngine::new(std::path::Path::new("."));
+        let engine = ChallengeEngine::new(&self.project_root);
         self.packs = engine.list_available().to_vec();
         self.installed_count = engine.list_installed().len();
+        self.installed_pack_ids = engine.list_installed().into_iter().map(|p| p.id.clone()).collect();
     }
 
     fn get_difficulty_str(&self) -> Option<&'static str> {
@@ -294,6 +314,11 @@ impl App {
                             InputMode::ConfirmingInstall => self.handle_confirm_install(key.code),
                             InputMode::ConfirmingRemove => self.handle_confirm_remove(key.code),
                             InputMode::ViewingDetail => self.handle_viewing_detail(key.code),
+                            InputMode::ViewingProjectDetail => {
+                                if matches!(key.code, KeyCode::Esc | KeyCode::Enter) {
+                                    self.input_mode = InputMode::Normal;
+                                }
+                            }
                         }
                     }
                 }
@@ -350,7 +375,8 @@ impl App {
             KeyCode::Char('g') => {
                 self.input_mode = InputMode::AddingGrade;
                 self.input_fields = vec![
-                    InputField { label: "Score", value: String::new() },
+                    InputField { label: "Course Code", value: String::new() },
+                    InputField { label: "Grade (e.g. O, A+, A, B+, B, C, F)", value: String::new() },
                 ];
                 self.current_field = 0;
                 self.status_msg = None;
@@ -358,6 +384,42 @@ impl App {
             KeyCode::Char('s') => {
                 self.input_mode = InputMode::SelectingSemester;
                 self.semester_cursor = 0;
+            }
+            KeyCode::Char('x') => {
+                if let Some(idx) = self.selected_deadline_index {
+                    if idx < self.upcoming_deadlines.len() {
+                        let deadline_id = self.upcoming_deadlines[idx].id.clone();
+                        if let Ok(conn) = self.academic_store.conn() {
+                            let _ = Deadline::complete(&conn, &deadline_id);
+                        }
+                        self.refresh_deadlines();
+                        self.status_msg = Some("Deadline completed".to_string());
+                    }
+                }
+            }
+            KeyCode::Char('j') => {
+                if let Some(idx) = self.selected_deadline_index {
+                    if idx + 1 < self.upcoming_deadlines.len() {
+                        self.selected_deadline_index = Some(idx + 1);
+                    }
+                } else if !self.upcoming_deadlines.is_empty() {
+                    self.selected_deadline_index = Some(0);
+                }
+            }
+            KeyCode::Char('k') => {
+                if let Some(idx) = self.selected_deadline_index {
+                    if idx > 0 {
+                        self.selected_deadline_index = Some(idx - 1);
+                    }
+                }
+            }
+            KeyCode::Char('+') => {
+                self.deadline_days = self.deadline_days.saturating_add(7);
+                self.refresh_deadlines();
+            }
+            KeyCode::Char('-') => {
+                self.deadline_days = self.deadline_days.saturating_sub(7).max(1);
+                self.refresh_deadlines();
             }
             _ => {}
         }
@@ -395,7 +457,102 @@ impl App {
                 }
             }
             KeyCode::Enter => {
-                self.status_msg = Some("Added".to_string());
+                match self.input_mode {
+                    InputMode::AddingCourse => {
+                        if self.input_fields.len() >= 3 {
+                            let name = self.input_fields[0].value.trim().to_string();
+                            let code = self.input_fields[1].value.trim().to_string();
+                            let credits = self.input_fields[2].value.trim().parse::<i32>().unwrap_or(0);
+                            if !name.is_empty() && !code.is_empty() && credits > 0 {
+                                if let Some(ref sem) = self.current_semester {
+                                    if let Ok(conn) = self.academic_store.conn() {
+                                        let course = Course {
+                                            id: uuid::Uuid::new_v4().to_string(),
+                                            semester_id: sem.id.clone(),
+                                            name,
+                                            code,
+                                            credits,
+                                        };
+                                        let _ = Course::add(&conn, &course);
+                                        self.course_count = Course::count_for_semester(&conn, &sem.id);
+                                        self.total_credits = Course::total_credits_for_semester(&conn, &sem.id);
+                                        self.status_msg = Some("Course added".into());
+                                    }
+                                } else {
+                                    self.status_msg = Some("No semester selected".into());
+                                }
+                            } else {
+                                self.status_msg = Some("Invalid course fields".into());
+                            }
+                        }
+                    }
+                    InputMode::AddingDeadline => {
+                        if self.input_fields.len() >= 2 {
+                            let title = self.input_fields[0].value.trim().to_string();
+                            let date_str = self.input_fields[1].value.trim();
+                            if !title.is_empty() {
+                                if let Ok(due_date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                                    if let Some(ref sem) = self.current_semester {
+                                        if let Ok(conn) = self.academic_store.conn() {
+                                            let deadline = Deadline {
+                                                id: uuid::Uuid::new_v4().to_string(),
+                                                semester_id: sem.id.clone(),
+                                                title,
+                                                description: String::new(),
+                                                due_date,
+                                                completed: false,
+                                            };
+                                            let _ = Deadline::add(&conn, &deadline);
+                                            self.upcoming_deadlines = Deadline::upcoming(&conn, 30).unwrap_or_default();
+                                            self.status_msg = Some("Deadline added".into());
+                                        }
+                                    } else {
+                                        self.status_msg = Some("No semester selected".into());
+                                    }
+                                } else {
+                                    self.status_msg = Some("Invalid date format (use YYYY-MM-DD)".into());
+                                }
+                            } else {
+                                self.status_msg = Some("Title cannot be empty".into());
+                            }
+                        }
+                    }
+                    InputMode::AddingGrade => {
+                        if self.input_fields.len() >= 2 {
+                            let course_code = self.input_fields[0].value.trim().to_string();
+                            let grade = self.input_fields[1].value.trim().to_uppercase();
+                            let valid_grades = ["O", "A+", "A", "B+", "B", "C", "F"];
+                            if !course_code.is_empty() && valid_grades.contains(&grade.as_str()) {
+                                if let Some(ref sem) = self.current_semester {
+                                    if let Ok(conn) = self.academic_store.conn() {
+                                        if let Some(course) = Course::find_by_code(&conn, &course_code) {
+                                            let entry = GradeEntry {
+                                                id: uuid::Uuid::new_v4().to_string(),
+                                                course_id: course.id,
+                                                semester_id: sem.id.clone(),
+                                                grade,
+                                                exam_name: None,
+                                                score: None,
+                                                total: None,
+                                            };
+                                            let _ = GradeEntry::add(&conn, &entry);
+                                            self.sgpa = GradeEntry::compute_sgpa(&conn, &sem.id);
+                                            self.cgpa = GradeEntry::compute_cgpa(&conn);
+                                            self.status_msg = Some("Grade added".into());
+                                        } else {
+                                            self.status_msg = Some("Course not found".into());
+                                        }
+                                    }
+                                } else {
+                                    self.status_msg = Some("No semester selected".into());
+                                }
+                            } else {
+                                self.status_msg = Some("Invalid grade (use O, A+, A, B+, B, C, or F)".into());
+                            }
+                        }
+                    }
+                    _ => {}
+                }
                 self.input_mode = InputMode::Normal;
             }
             _ => {}
@@ -521,7 +678,8 @@ impl App {
                 }
             }
             KeyCode::Enter => {
-                if self.show_projects {
+                if self.show_projects && self.selected_project.is_some() {
+                    self.input_mode = InputMode::ViewingProjectDetail;
                 } else if self.selected_problem.is_some() {
                     self.input_mode = InputMode::ViewingDetail;
                 }
@@ -615,7 +773,7 @@ impl App {
                 if let Some(idx) = self.selected_pack {
                     if idx < self.packs.len() {
                         let pack_id = self.packs[idx].id.clone();
-                        let mut engine = ChallengeEngine::new(std::path::Path::new("."));
+                        let mut engine = ChallengeEngine::new(&self.project_root);
                         let _ = engine.install_pack(&pack_id);
                         self.refresh_packs();
                     }
@@ -635,7 +793,7 @@ impl App {
                 if let Some(idx) = self.selected_pack {
                     if idx < self.packs.len() {
                         let pack_id = self.packs[idx].id.clone();
-                        let mut engine = ChallengeEngine::new(std::path::Path::new("."));
+                        let mut engine = ChallengeEngine::new(&self.project_root);
                         let _ = engine.remove_pack(&pack_id);
                         self.refresh_packs();
                     }
@@ -653,6 +811,42 @@ impl App {
         match code {
             KeyCode::Esc | KeyCode::Enter => {
                 self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Char('a') => {
+                if let Some(idx) = self.selected_problem {
+                    let problems = self.all_problems();
+                    if idx < problems.len() {
+                        let (pack, problem) = problems[idx];
+                        if let Ok(conn) = self.core_store.conn() {
+                            let _ = devcore_challenges::progress::init_challenge_schema(&conn);
+                            let _ = devcore_challenges::progress::record_attempt(
+                                &conn,
+                                &problem.id,
+                                &pack.id,
+                                false,
+                                0,
+                            );
+                            self.status_msg = Some("Attempt recorded".to_string());
+                        }
+                    }
+                }
+            }
+            KeyCode::Char('h') => {
+                if let Some(idx) = self.selected_problem {
+                    let problems = self.all_problems();
+                    if idx < problems.len() {
+                        let (pack, problem) = problems[idx];
+                        if let Ok(conn) = self.core_store.conn() {
+                            let _ = devcore_challenges::progress::init_challenge_schema(&conn);
+                            let _ = devcore_challenges::progress::record_hint(
+                                &conn,
+                                &problem.id,
+                                &pack.id,
+                            );
+                            self.status_msg = Some("Hint recorded".to_string());
+                        }
+                    }
+                }
             }
             _ => {}
         }
@@ -712,6 +906,8 @@ impl App {
                     widgets::KeyBinding { key: "d", label: "Deadline", color: theme::YELLOW },
                     widgets::KeyBinding { key: "g", label: "Grade", color: theme::BLUE },
                     widgets::KeyBinding { key: "s", label: "Semester", color: theme::MAUVE },
+                    widgets::KeyBinding { key: "x", label: "Complete", color: theme::RED },
+                    widgets::KeyBinding { key: "+/-", label: "Window", color: theme::TEAL },
                     widgets::KeyBinding { key: "q", label: "Quit", color: theme::RED },
                 ],
                 _ => vec![
@@ -763,6 +959,14 @@ impl App {
                             let (_pack, problem) = problems[idx];
                             widgets::render_problem_detail(frame, area, problem);
                         }
+                    }
+                }
+            }
+            InputMode::ViewingProjectDetail => {
+                if let Some(idx) = self.selected_project {
+                    if idx < self.projects.len() {
+                        let project = &self.projects[idx];
+                        widgets::render_project_detail(frame, area, project);
                     }
                 }
             }

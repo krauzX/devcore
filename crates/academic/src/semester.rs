@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS grades (
     course_id TEXT NOT NULL,
     semester_id TEXT NOT NULL,
     grade TEXT NOT NULL,
+    exam_name TEXT,
+    score REAL,
+    total REAL,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE CASCADE
 );
