@@ -58,4 +58,43 @@ impl Deadline {
         )?;
         Ok(())
     }
+
+    pub fn list_all(conn: &Connection, semester_id: &str) -> Result<Vec<Deadline>, rusqlite::Error> {
+        let mut stmt = conn.prepare(
+            "SELECT id, semester_id, title, description, due_date, completed \
+             FROM deadlines \
+             WHERE semester_id = ?1 \
+             ORDER BY due_date",
+        )?;
+        let rows = stmt.query_map(params![semester_id], |row| {
+            Ok(Deadline {
+                id: row.get(0)?,
+                semester_id: row.get(1)?,
+                title: row.get(2)?,
+                description: row.get(3)?,
+                due_date: row.get::<_, String>(4)?.parse().unwrap_or_default(),
+                completed: row.get::<_, i32>(5)? != 0,
+            })
+        })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    pub fn days_until(due_date: NaiveDate) -> i64 {
+        let today = chrono::Local::now().naive_local().date();
+        (due_date - today).num_days()
+    }
+
+    pub fn urgency_label(days_left: i64) -> &'static str {
+        if days_left <= 0 {
+            "OVERDUE"
+        } else if days_left <= 1 {
+            "!!!"
+        } else if days_left <= 3 {
+            "!!"
+        } else if days_left <= 7 {
+            "!"
+        } else {
+            ""
+        }
+    }
 }

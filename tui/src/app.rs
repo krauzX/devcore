@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use devcore_academic::{Deadline, GradeEntry, SemesterStore};
+use devcore_academic::{Course, Deadline, GradeEntry, SemesterStore};
 use devcore_challenges::{ChallengeEngine, ProblemPack};
 use devcore_core::{DevCoreConfig, Store};
 use devcore_devtrack::{SkillProgress, Streak};
@@ -56,10 +56,15 @@ pub struct App {
     pub(crate) current_semester: Option<devcore_academic::Semester>,
     pub(crate) upcoming_deadlines: Vec<Deadline>,
     pub(crate) sgpa: Option<f64>,
+    pub(crate) cgpa: Option<f64>,
+    pub(crate) course_count: i32,
+    pub(crate) total_credits: i32,
     pub(crate) streak: Option<Streak>,
     pub(crate) skill_progress: Vec<SkillProgress>,
     pub(crate) packs: Vec<ProblemPack>,
+    #[allow(dead_code)]
     pub(crate) installed_count: usize,
+    #[allow(dead_code)]
     pub(crate) solved_count: usize,
 }
 
@@ -78,6 +83,21 @@ impl App {
             let conn = academic_store.conn().ok()?;
             Some(Deadline::upcoming(&conn, 30).unwrap_or_default())
         }).unwrap_or_default();
+
+        let (course_count, total_credits) = current_semester.as_ref().map(|s| {
+            let conn = academic_store.conn().ok();
+            match conn {
+                Some(c) => (
+                    Course::count_for_semester(&c, &s.id),
+                    Course::total_credits_for_semester(&c, &s.id),
+                ),
+                None => (0, 0),
+            }
+        }).unwrap_or((0, 0));
+
+        let cgpa = academic_store.conn().ok().and_then(|conn| {
+            GradeEntry::compute_cgpa(&conn)
+        });
 
         let streak = devcore_devtrack::compute_streak(project_root).ok();
 
@@ -110,6 +130,9 @@ impl App {
             current_semester,
             upcoming_deadlines,
             sgpa,
+            cgpa,
+            course_count,
+            total_credits,
             streak,
             skill_progress,
             packs,

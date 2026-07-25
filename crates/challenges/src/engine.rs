@@ -1,6 +1,39 @@
 use crate::pack::{builtin_packs, Difficulty, Problem, ProblemPack};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OnlineProblem {
+    pub fid: u32,
+    pub title: String,
+    pub slug: String,
+    pub difficulty: String,
+    pub acceptance: f64,
+    pub frequency: f64,
+    pub url: String,
+    #[serde(default)]
+    pub is_premium: bool,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub hints: Vec<String>,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub solution: Option<String>,
+    #[serde(default)]
+    pub company: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OnlineProblemListResult {
+    pub problems: Vec<OnlineProblem>,
+    pub total: usize,
+    pub page: usize,
+    pub per_page: usize,
+    pub total_pages: usize,
+}
 
 pub struct ChallengeEngine {
     builtin: Vec<ProblemPack>,
@@ -122,5 +155,47 @@ impl ChallengeEngine {
                     .map(move |problem| (pack.id.as_str(), problem))
             })
             .collect()
+    }
+
+    pub fn load_online_problems(&self) -> Vec<OnlineProblem> {
+        let data = include_str!("../data/leetcode_clean.json");
+        serde_json::from_str(data).unwrap_or_default()
+    }
+
+    pub fn list_online(
+        &self,
+        difficulty: Option<&str>,
+        page: usize,
+        per_page: usize,
+    ) -> OnlineProblemListResult {
+        let all = self.load_online_problems();
+        let filtered: Vec<OnlineProblem> = all
+            .into_iter()
+            .filter(|p| {
+                if let Some(diff) = difficulty {
+                    p.difficulty.to_lowercase() == diff.to_lowercase()
+                } else {
+                    true
+                }
+            })
+            .collect();
+        let total = filtered.len();
+        let total_pages = if per_page > 0 {
+            (total + per_page - 1) / per_page
+        } else {
+            1
+        };
+        let page = page.max(1).min(total_pages.max(1));
+        let start = ((page - 1) * per_page).min(total);
+        let end = (start + per_page).min(total);
+        let problems = filtered[start..end].to_vec();
+
+        OnlineProblemListResult {
+            problems,
+            total,
+            page,
+            per_page,
+            total_pages,
+        }
     }
 }

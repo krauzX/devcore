@@ -21,6 +21,28 @@ pub fn grade_to_points(grade: &str) -> f64 {
     }
 }
 
+pub fn score_to_grade(obtained: f64, total: f64) -> &'static str {
+    if total <= 0.0 {
+        return "F";
+    }
+    let pct = (obtained / total) * 100.0;
+    if pct >= 90.0 {
+        "O"
+    } else if pct >= 80.0 {
+        "A+"
+    } else if pct >= 70.0 {
+        "A"
+    } else if pct >= 60.0 {
+        "B+"
+    } else if pct >= 50.0 {
+        "B"
+    } else if pct >= 40.0 {
+        "C"
+    } else {
+        "F"
+    }
+}
+
 impl GradeEntry {
     pub fn compute_sgpa(conn: &Connection, semester_id: &str) -> Option<f64> {
         let mut stmt = conn
@@ -60,5 +82,36 @@ impl GradeEntry {
             params![entry.id, entry.course_id, entry.semester_id, entry.grade],
         )?;
         Ok(())
+    }
+
+    pub fn compute_cgpa(conn: &Connection) -> Option<f64> {
+        let mut stmt = conn
+            .prepare(
+                "SELECT g.grade, c.credits \
+                 FROM grades g \
+                 JOIN courses c ON g.course_id = c.id",
+            )
+            .ok()?;
+        let rows = stmt
+            .query_map([], |row| {
+                let grade: String = row.get(0)?;
+                let credits: i32 = row.get(1)?;
+                Ok((grade, credits))
+            })
+            .ok()?;
+
+        let mut total_points = 0.0;
+        let mut total_credits = 0;
+
+        for (grade, credits) in rows.flatten() {
+            total_points += grade_to_points(&grade) * credits as f64;
+            total_credits += credits;
+        }
+
+        if total_credits == 0 {
+            None
+        } else {
+            Some(total_points / total_credits as f64)
+        }
     }
 }

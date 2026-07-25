@@ -57,4 +57,40 @@ impl Course {
             .ok()?;
         rows.next().and_then(|r| r.ok())
     }
+
+    pub fn find_by_code(conn: &Connection, code: &str) -> Option<Course> {
+        let mut stmt = conn
+            .prepare("SELECT id, semester_id, name, code, credits FROM courses WHERE code = ?1")
+            .ok()?;
+        let mut rows = stmt
+            .query_map(params![code], |row| {
+                Ok(Course {
+                    id: row.get(0)?,
+                    semester_id: row.get(1)?,
+                    name: row.get(2)?,
+                    code: row.get(3)?,
+                    credits: row.get(4)?,
+                })
+            })
+            .ok()?;
+        rows.next().and_then(|r| r.ok())
+    }
+
+    pub fn count_for_semester(conn: &Connection, semester_id: &str) -> i32 {
+        conn.query_row(
+            "SELECT COUNT(*) FROM courses WHERE semester_id = ?1",
+            params![semester_id],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+    }
+
+    pub fn total_credits_for_semester(conn: &Connection, semester_id: &str) -> i32 {
+        conn.query_row(
+            "SELECT COALESCE(SUM(credits), 0) FROM courses WHERE semester_id = ?1",
+            params![semester_id],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+    }
 }
