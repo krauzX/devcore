@@ -1,44 +1,37 @@
 # DevCore
 
-A local-first developer productivity toolkit for college students. Built in Rust with a TUI dashboard, system tray integration, and CLI.
+A local-first developer productivity toolkit for college students. Built in Rust with a fully interactive TUI dashboard, system tray, and CLI.
 
 ## Features
 
+### TUI Dashboard (fully interactive)
+- **Dashboard tab** — semester info, SGPA gauge, deadlines, streak, quick actions
+- **Academic tab** — add courses, deadlines, grades; set current semester; view SGPA/CGPA
+- **Git tab** — repo analysis (commits, insertions, deletions, languages), streak, skill progression, add XP
+- **Challenges tab** — browse 1788 problems, install/remove packs, filter by difficulty, view problem details, browse projects
+
 ### Academic Tracker
 - Manage semesters, courses, grades (SGPA/CGPA)
-- Track deadlines with urgency indicators
-- Color-coded deadline display (red=today, yellow=this week, cyan=soon, green=later)
+- Track deadlines with urgency colors (red=today, yellow=this week, cyan=soon, green=later)
+- Add courses, deadlines, grades interactively in TUI
 
 ### Git Streak & Skills
 - Track commit streaks (current, longest, total)
-- 5-axis skill progression: commit hygiene, testing, documentation, code review, architecture
-- XP-based leveling system
+- 5-axis skill progression with XP system
+- Repository analysis (commits, insertions, deletions, languages)
 
 ### DSA Challenges
 - 1788 offline LeetCode problems (embedded at compile time)
 - 5 builtin problem packs (arrays, linked lists, stacks, trees, graphs)
 - Install/remove packs on demand
-- LeetCode GraphQL API integration (daily challenges, problem lookup)
+- LeetCode GraphQL API integration
 - 5 build-your-own projects (shell, git, HTTP server, Redis, compiler)
-
-### TUI Dashboard
-- Interactive terminal UI with Catppuccin Mocha theme
-- 4 tabs: Dashboard, Academic, Git, Challenges
-- Modular widget system (reusable components)
-- Keyboard navigation
 
 ### System Tray
 - Cloudflare-style daily dashboard
 - Shows deadlines, streak, SGPA in tooltip
-- Quick access to TUI
-
-### CLI
-- Full command interface for all features
-- Subcommands: tui, tray, academic, git, dsa
 
 ## Installation
-
-### From Source
 
 ```bash
 git clone https://github.com/krauzX/devcore.git
@@ -46,60 +39,37 @@ cd devcore
 cargo build --release
 ```
 
-### Via npm (coming soon)
-
-```bash
-npm install -g @krauz/devcore
-```
-
 ## Usage
 
-### TUI Dashboard
-
+### TUI (recommended)
 ```bash
 devcore tui
 ```
 
-### System Tray
+### Keyboard Shortcuts
+| Key | Tab | Action |
+|-----|-----|--------|
+| 1-4 | Any | Switch tabs |
+| Tab | Any | Next tab |
+| q/Esc | Any | Quit |
+| c | Academic | Add course |
+| d | Academic | Add deadline |
+| g | Academic | Add grade |
+| s | Academic | Set current semester |
+| x | Git | Add XP to skill |
+| i | Challenges | Install pack |
+| r | Challenges | Remove pack |
+| Enter | Challenges | View problem detail |
+| e/m/h/a | Challenges | Filter Easy/Medium/Hard/All |
+| o | Challenges | Toggle projects view |
+| n/p | Challenges | Next/prev page |
+| Up/Down | Any | Navigate items |
 
+### CLI
 ```bash
-devcore tray
-```
-
-### Academic Management
-
-```bash
-devcore academic list              # List semesters
-devcore academic current           # Show current semester
-devcore academic deadlines         # Show upcoming deadlines
-devcore academic dashboard         # Show full dashboard
-devcore academic course --code CS301 --name "Data Structures" --credits 4
-devcore academic grade --course CS301 --exam mid --obtained 45 --total 50
-devcore academic sgpa              # Show SGPA
-devcore academic cgpa              # Show CGPA
-```
-
-### Git Tracking
-
-```bash
-devcore git analyze                # Analyze current repo
-devcore git streak                 # Show commit streak
-devcore git skills                 # Show skill progression
-devcore git xp --axis testing --amount 50 --reason "wrote tests"
-```
-
-### DSA Challenges
-
-```bash
-devcore dsa list                   # List available packs
-devcore dsa install arrays-easy    # Install a pack
-devcore dsa problems arrays-easy   # List problems in pack
-devcore dsa show arrays-easy two-sum  # Show problem details
-devcore dsa browse                 # Browse all 1788 problems
-devcore dsa leetcode list --difficulty easy
-devcore dsa leetcode daily
-devcore dsa project list
-devcore dsa project install build-your-own-shell
+devcore academic list / current / deadlines / dashboard / grade / course / sgpa / cgpa
+devcore git analyze / streak / skills / xp
+devcore dsa list / install / remove / browse / leetcode / project
 ```
 
 ## Architecture
@@ -119,28 +89,21 @@ devcore/
 
 ## Crates
 
-| Crate | Purpose | Lines |
-|-------|---------|-------|
-| `devcore-core` | Shared types, config, KV storage | ~120 |
-| `devcore-academic` | Semester, course, grade, deadline | ~400 |
-| `devcore-devtrack` | Git analysis, skill progression, streaks | ~430 |
-| `devcore-challenges` | DSA engine, LeetCode API, projects | ~1200 |
-| `devcore-tray` | System tray daemon | ~140 |
-| `devcore-tui` | Interactive terminal dashboard | ~800 |
-| `devcore` | CLI entry point | ~500 |
-
-## Datasets
-
-- `leetcode_official.json` — 1788 LeetCode problems (embedded at compile time)
-- `leetcode_clean.json` — 68 problems with tags/hints/description
-- `project_tutorials.md` — project-based-learning tutorials
-- `projectlearn.md` — ProjectLearn data
+| Crate | Purpose |
+|-------|---------|
+| `devcore-core` | Shared types, config, KV storage |
+| `devcore-academic` | Semester, course, grade, deadline |
+| `devcore-devtrack` | Git analysis, skill progression, streaks |
+| `devcore-challenges` | DSA engine, LeetCode API, projects |
+| `devcore-tray` | System tray daemon |
+| `devcore-tui` | Interactive terminal dashboard |
+| `devcore` | CLI entry point |
 
 ## Testing
 
 ```bash
-cargo test --workspace    # Run all tests (16 tests)
-cargo clippy --workspace  # Check for warnings (0 warnings)
+cargo test --workspace    # 16 tests
+cargo clippy --workspace  # 0 warnings
 ```
 
 ## License
