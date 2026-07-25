@@ -1,5 +1,6 @@
 /target/
 .devcore/
+docs/
 *.db
 *.db-journal
 *.db-wal
