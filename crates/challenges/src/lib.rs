@@ -4,7 +4,7 @@ pub mod pack;
 pub mod progress;
 pub mod projects;
 
-pub use engine::{ChallengeEngine, OnlineProblem, OnlineProblemListResult};
+pub use engine::{ChallengeEngine, OfflineProblem, OfflineProblemListResult, OnlineProblem, OnlineProblemListResult};
 pub use leetcode::{CodeSnippet, LeetCodeClient, LeetCodeProblem, ProblemListItem, TopicTag};
 pub use pack::{Difficulty, Problem, ProblemPack};
 pub use progress::{ChallengeProgress, RecordAttemptError};

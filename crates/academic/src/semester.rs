@@ -143,3 +143,48 @@ impl SemesterStore {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_semester_store_open() {
+        let dir = tempdir().unwrap();
+        let store = SemesterStore::open(dir.path()).unwrap();
+        let sems = store.list_semesters().unwrap();
+        assert!(sems.is_empty());
+    }
+
+    #[test]
+    fn test_add_and_list_semesters() {
+        let dir = tempdir().unwrap();
+        let store = SemesterStore::open(dir.path()).unwrap();
+
+        let sem1 = Semester {
+            id: "s1".into(),
+            name: "Sem 1".into(),
+            start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2024, 6, 30).unwrap(),
+            is_current: false,
+        };
+        let sem2 = Semester {
+            id: "s2".into(),
+            name: "Sem 2".into(),
+            start_date: NaiveDate::from_ymd_opt(2024, 7, 1).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2024, 12, 31).unwrap(),
+            is_current: true,
+        };
+
+        store.add_semester(&sem1).unwrap();
+        store.add_semester(&sem2).unwrap();
+
+        let sems = store.list_semesters().unwrap();
+        assert_eq!(sems.len(), 2);
+
+        let current = store.current_semester().unwrap();
+        assert_eq!(current.id, "s2");
+        assert!(current.is_current);
+    }
+}

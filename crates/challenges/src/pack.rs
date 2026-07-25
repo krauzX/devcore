@@ -455,3 +455,22 @@ pub fn word_ladder(begin_word: &str, end_word: &str, word_list: &[&str]) -> i32 
         }],
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_builtin_packs_count() {
+        let packs = builtin_packs();
+        assert_eq!(packs.len(), 5);
+    }
+
+    #[test]
+    fn test_pack_has_problems() {
+        let packs = builtin_packs();
+        for pack in &packs {
+            assert!(!pack.problems.is_empty(), "pack '{}' has no problems", pack.id);
+        }
+    }
+}

@@ -7,13 +7,24 @@ use devcore_challenges::Difficulty;
 
 pub fn render_challenges_tab(frame: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(35),
+            Constraint::Percentage(35),
+            Constraint::Min(10),
+        ])
         .spacing(1)
         .split(area);
 
-    render_packs(frame, chunks[0], app);
-    render_problems(frame, chunks[1], app);
+    let top_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .spacing(1)
+        .split(chunks[0]);
+
+    render_packs(frame, top_chunks[0], app);
+    render_problems(frame, top_chunks[1], app);
+    render_offline_problems(frame, chunks[2], app);
 }
 
 fn difficulty_color(diff: &Difficulty) -> Color {
@@ -142,6 +153,94 @@ fn render_problems(frame: &mut Frame, area: Rect, app: &App) {
     .block(
         Block::default()
             .title(" All Problems ")
+            .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
+            .border_type(BorderType::Rounded)
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(theme::OVERLAY))
+            .style(Style::default().bg(theme::SURFACE)),
+    )
+    .column_spacing(1);
+    frame.render_widget(table, area);
+}
+
+fn render_offline_problems(frame: &mut Frame, area: Rect, app: &App) {
+    let header = Row::new(vec![
+        Cell::from(Span::styled(
+            "ID",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Title",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Difficulty",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Cell::from(Span::styled(
+            "Accept%",
+            Style::default()
+                .fg(theme::MAUVE)
+                .add_modifier(Modifier::BOLD),
+        )),
+    ])
+    .style(Style::default().bg(theme::BASE));
+
+    let rows: Vec<Row> = app
+        .offline_problems
+        .iter()
+        .map(|p| {
+            let color = match p.difficulty.as_str() {
+                "Easy" => theme::GREEN,
+                "Medium" => theme::YELLOW,
+                "Hard" => theme::RED,
+                _ => theme::TEXT,
+            };
+            Row::new(vec![
+                Cell::from(Span::styled(
+                    format!("{}", p.fid),
+                    Style::default().fg(theme::SUBTEXT),
+                )),
+                Cell::from(Span::styled(
+                    p.title.clone(),
+                    Style::default().fg(theme::TEXT),
+                )),
+                Cell::from(Span::styled(
+                    p.difficulty.clone(),
+                    Style::default().fg(color),
+                )),
+                Cell::from(Span::styled(
+                    format!("{:.1}%", p.acceptance),
+                    Style::default().fg(theme::SUBTEXT),
+                )),
+            ])
+        })
+        .collect();
+
+    let title = format!(
+        " Offline Problems — Page {}/{} ({} total) ",
+        app.offline_page, app.offline_total_pages, app.offline_total
+    );
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Length(6),
+            Constraint::Min(20),
+            Constraint::Length(10),
+            Constraint::Length(10),
+        ],
+    )
+    .header(header)
+    .block(
+        Block::default()
+            .title(title)
             .title_style(Style::default().fg(theme::BLUE).add_modifier(Modifier::BOLD))
             .border_type(BorderType::Rounded)
             .borders(Borders::ALL)

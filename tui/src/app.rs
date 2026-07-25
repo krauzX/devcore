@@ -4,7 +4,7 @@ use std::time::Duration;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use devcore_academic::{Course, Deadline, GradeEntry, SemesterStore};
-use devcore_challenges::{ChallengeEngine, ProblemPack};
+use devcore_challenges::{ChallengeEngine, OfflineProblem, ProblemPack};
 use devcore_core::{DevCoreConfig, Store};
 use devcore_devtrack::{SkillProgress, Streak};
 use ratatui::prelude::*;
@@ -66,6 +66,10 @@ pub struct App {
     pub(crate) installed_count: usize,
     #[allow(dead_code)]
     pub(crate) solved_count: usize,
+    pub(crate) offline_problems: Vec<OfflineProblem>,
+    pub(crate) offline_page: usize,
+    pub(crate) offline_total_pages: usize,
+    pub(crate) offline_total: usize,
 }
 
 impl App {
@@ -122,6 +126,9 @@ impl App {
             .unwrap_or(0)
         };
 
+        let per_page = 20;
+        let offline_result = engine.list_offline(None, 1, per_page);
+
         Ok(Self {
             should_quit: false,
             active_tab: Tab::Dashboard,
@@ -138,6 +145,10 @@ impl App {
             packs,
             installed_count,
             solved_count,
+            offline_problems: offline_result.problems,
+            offline_page: offline_result.page,
+            offline_total_pages: offline_result.total_pages,
+            offline_total: offline_result.total,
         })
     }
 
@@ -168,6 +179,26 @@ impl App {
                             KeyCode::Char('2') => self.active_tab = Tab::Academic,
                             KeyCode::Char('3') => self.active_tab = Tab::Git,
                             KeyCode::Char('4') => self.active_tab = Tab::Challenges,
+                            KeyCode::Char('n') if self.active_tab == Tab::Challenges => {
+                                let engine = ChallengeEngine::new(std::path::Path::new("."));
+                                let per_page = 20;
+                                let next_page = (self.offline_page + 1).min(self.offline_total_pages.max(1));
+                                let result = engine.list_offline(None, next_page, per_page);
+                                self.offline_problems = result.problems;
+                                self.offline_page = result.page;
+                                self.offline_total_pages = result.total_pages;
+                                self.offline_total = result.total;
+                            }
+                            KeyCode::Char('p') if self.active_tab == Tab::Challenges => {
+                                let engine = ChallengeEngine::new(std::path::Path::new("."));
+                                let per_page = 20;
+                                let prev_page = self.offline_page.saturating_sub(1).max(1);
+                                let result = engine.list_offline(None, prev_page, per_page);
+                                self.offline_problems = result.problems;
+                                self.offline_page = result.page;
+                                self.offline_total_pages = result.total_pages;
+                                self.offline_total = result.total;
+                            }
                             _ => {}
                         }
                     }

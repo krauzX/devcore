@@ -51,3 +51,34 @@ impl Store {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_store_open_creates_db() {
+        let dir = tempdir().unwrap();
+        let store = Store::open(dir.path()).unwrap();
+        assert!(dir.path().join(".devcore/devcore.db").exists());
+        assert!(store.get("nonexistent").unwrap().is_none());
+    }
+
+    #[test]
+    fn test_store_set_and_get() {
+        let dir = tempdir().unwrap();
+        let store = Store::open(dir.path()).unwrap();
+        store.set("foo", "bar").unwrap();
+        assert_eq!(store.get("foo").unwrap(), Some("bar".into()));
+    }
+
+    #[test]
+    fn test_store_overwrite() {
+        let dir = tempdir().unwrap();
+        let store = Store::open(dir.path()).unwrap();
+        store.set("key", "v1").unwrap();
+        store.set("key", "v2").unwrap();
+        assert_eq!(store.get("key").unwrap(), Some("v2".into()));
+    }
+}

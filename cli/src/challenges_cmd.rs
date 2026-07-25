@@ -33,6 +33,14 @@ pub enum DsaAction {
     Leetcode(LeetcodeCmd),
     #[command(name = "project")]
     Project(ProjectCmd),
+    Browse {
+        #[arg(long)]
+        difficulty: Option<String>,
+        #[arg(long, default_value_t = 1)]
+        page: usize,
+        #[arg(long, default_value_t = 20)]
+        per_page: usize,
+    },
 }
 
 #[derive(Parser)]
@@ -83,6 +91,39 @@ pub fn run(cmd: DsaCmd, project_root: &Path) -> Result<()> {
     match cmd.action {
         DsaAction::Leetcode(lc_cmd) => return run_leetcode(lc_cmd),
         DsaAction::Project(proj_cmd) => return run_project(proj_cmd, project_root),
+        DsaAction::Browse {
+            difficulty,
+            page,
+            per_page,
+        } => {
+            let diff = difficulty.as_deref();
+            let result = engine.list_offline(diff, page, per_page);
+            println!(
+                "Offline Problems (page {}/{}, showing {}-{} of {})",
+                result.page,
+                result.total_pages,
+                ((result.page - 1) * result.per_page + 1).min(result.total),
+                (result.page * result.per_page).min(result.total),
+                result.total
+            );
+            println!();
+            println!(
+                "{:<6} {:<50} {:<10} {:<10}",
+                "ID", "Title", "Diff", "Accept%"
+            );
+            println!("{}", "-".repeat(76));
+            for p in &result.problems {
+                println!(
+                    "{:<6} {:<50} {:<10} {:<9.1}%",
+                    p.fid, p.title, p.difficulty, p.acceptance
+                );
+            }
+            println!();
+            println!(
+                "Page {}/{} — use --page N to navigate",
+                result.page, result.total_pages
+            );
+        }
         DsaAction::List => {
             let available = engine.list_available();
             println!("Available Packs:");

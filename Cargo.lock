@@ -630,6 +630,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.19",
  "uuid",
 ]
@@ -646,6 +647,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.19",
  "uuid",
 ]
@@ -660,6 +662,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.19",
 ]
 
@@ -674,6 +677,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.19",
  "uuid",
  "walkdir",
@@ -687,6 +691,7 @@ dependencies = [
  "chrono",
  "devcore-academic",
  "devcore-core",
+ "devcore-devtrack",
  "dirs 5.0.1",
  "muda",
  "serde",

@@ -264,29 +264,27 @@ fn run_deadlines(project_root: &Path, days: i64) -> Result<()> {
         let days_left = Deadline::days_until(d.due_date);
         let priority = Deadline::urgency_label(days_left);
 
-        let urgency_str = if days_left <= 0 {
-            "\x1b[31m"  // red
-        } else if days_left <= 1 {
-            "\x1b[31m"  // red
+        let urgency_str = if days_left <= 1 {
+            "\x1b[31m"
         } else if days_left <= 3 {
-            "\x1b[33m"  // yellow
+            "\x1b[33m"
         } else if days_left <= 7 {
-            "\x1b[36m"  // cyan
+            "\x1b[36m"
         } else {
-            "\x1b[32m"  // green
+            "\x1b[32m"
         };
 
         let reset = "\x1b[0m";
 
         let label = if priority.is_empty() {
-            format!("     ")
+            "     ".to_string()
         } else {
             format!("[{:<3}]", priority)
         };
 
         println!(
-            "{}{}{} {}  due {} ({}d){}",
-            urgency_str, label, reset, d.title, d.due_date, days_left, ""
+            "{}{}{} {}  due {} ({}d)",
+            urgency_str, label, reset, d.title, d.due_date, days_left
         );
     }
 

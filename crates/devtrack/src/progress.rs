@@ -130,3 +130,27 @@ pub fn add_xp(
 
     Ok(SkillProgress::from_xp(axis, current_xp))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_skill_from_xp() {
+        let s0 = SkillProgress::from_xp(SkillAxis::Testing, 0);
+        assert_eq!(s0.level, 0);
+        assert_eq!(s0.xp, 0);
+
+        let s1 = SkillProgress::from_xp(SkillAxis::Testing, 50);
+        assert_eq!(s1.level, 0);
+
+        let s2 = SkillProgress::from_xp(SkillAxis::Testing, 100);
+        assert_eq!(s2.level, 1);
+
+        let s3 = SkillProgress::from_xp(SkillAxis::Testing, 1050);
+        assert_eq!(s3.level, MAX_LEVEL);
+
+        let s4 = SkillProgress::from_xp(SkillAxis::Testing, 2000);
+        assert_eq!(s4.level, MAX_LEVEL);
+    }
+}

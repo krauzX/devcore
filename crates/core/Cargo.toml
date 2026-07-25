@@ -11,3 +11,6 @@ rusqlite.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 dirs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -35,6 +35,64 @@ pub struct OnlineProblemListResult {
     pub total_pages: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(non_snake_case)]
+struct OfflineStat {
+    #[serde(default)]
+    frontend_question_id: Option<u32>,
+    #[serde(default)]
+    question__title: Option<String>,
+    #[serde(default)]
+    question__title_slug: Option<String>,
+    #[serde(default)]
+    total_acs: Option<u64>,
+    #[serde(default)]
+    total_submitted: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct OfflineDifficulty {
+    #[serde(default)]
+    level: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct OfflineStatStatusPair {
+    #[serde(default)]
+    stat: Option<OfflineStat>,
+    #[serde(default)]
+    difficulty: Option<OfflineDifficulty>,
+    #[serde(default)]
+    paid_only: Option<bool>,
+    #[serde(default)]
+    frequency: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct OfflineWrapper {
+    #[serde(default)]
+    stat_status_pairs: Option<Vec<OfflineStatStatusPair>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OfflineProblem {
+    pub fid: u32,
+    pub title: String,
+    pub slug: String,
+    pub difficulty: String,
+    pub acceptance: f64,
+    pub is_premium: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct OfflineProblemListResult {
+    pub problems: Vec<OfflineProblem>,
+    pub total: usize,
+    pub page: usize,
+    pub per_page: usize,
+    pub total_pages: usize,
+}
+
 pub struct ChallengeEngine {
     builtin: Vec<ProblemPack>,
     installed: Vec<ProblemPack>,
@@ -181,7 +239,7 @@ impl ChallengeEngine {
             .collect();
         let total = filtered.len();
         let total_pages = if per_page > 0 {
-            (total + per_page - 1) / per_page
+            total.div_ceil(per_page)
         } else {
             1
         };
@@ -197,5 +255,105 @@ impl ChallengeEngine {
             per_page,
             total_pages,
         }
+    }
+
+    pub fn load_offline_problems(&self) -> Vec<OfflineProblem> {
+        let data = include_str!("../data/leetcode_official.json");
+        let wrapper: OfflineWrapper = serde_json::from_str(data).unwrap_or(OfflineWrapper { stat_status_pairs: None });
+        let pairs = wrapper.stat_status_pairs.unwrap_or_default();
+        let mut problems: Vec<OfflineProblem> = Vec::with_capacity(pairs.len());
+        for pair in pairs {
+            let stat = match pair.stat {
+                Some(s) => s,
+                None => continue,
+            };
+            let diff = pair.difficulty.as_ref().and_then(|d| d.level);
+            let difficulty = match diff {
+                Some(1) => "Easy".to_string(),
+                Some(2) => "Medium".to_string(),
+                Some(3) => "Hard".to_string(),
+                _ => "Unknown".to_string(),
+            };
+            let submitted = stat.total_submitted.unwrap_or(0);
+            let acs = stat.total_acs.unwrap_or(0);
+            let acceptance = if submitted > 0 {
+                (acs as f64 / submitted as f64) * 100.0
+            } else {
+                0.0
+            };
+            problems.push(OfflineProblem {
+                fid: stat.frontend_question_id.unwrap_or(0),
+                title: stat.question__title.unwrap_or_default(),
+                slug: stat.question__title_slug.unwrap_or_default(),
+                difficulty,
+                acceptance,
+                is_premium: pair.paid_only.unwrap_or(false),
+            });
+        }
+        problems
+    }
+
+    pub fn list_offline(
+        &self,
+        difficulty: Option<&str>,
+        page: usize,
+        per_page: usize,
+    ) -> OfflineProblemListResult {
+        let all = self.load_offline_problems();
+        let filtered: Vec<OfflineProblem> = all
+            .into_iter()
+            .filter(|p| {
+                if let Some(diff) = difficulty {
+                    p.difficulty.to_lowercase() == diff.to_lowercase()
+                } else {
+                    true
+                }
+            })
+            .collect();
+        let total = filtered.len();
+        let total_pages = if per_page > 0 {
+            total.div_ceil(per_page)
+        } else {
+            1
+        };
+        let page = page.max(1).min(total_pages.max(1));
+        let start = ((page - 1) * per_page).min(total);
+        let end = (start + per_page).min(total);
+        let problems = filtered[start..end].to_vec();
+
+        OfflineProblemListResult {
+            problems,
+            total,
+            page,
+            per_page,
+            total_pages,
+        }
+    }
+
+    pub fn get_offline_problem(&self, slug: &str) -> Option<OfflineProblem> {
+        let all = self.load_offline_problems();
+        all.into_iter().find(|p| p.slug == slug)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_engine_new() {
+        let dir = tempdir().unwrap();
+        let engine = ChallengeEngine::new(dir.path());
+        assert!(dir.path().join("challenges/packs").exists());
+        assert!(engine.installed.is_empty());
+    }
+
+    #[test]
+    fn test_list_available() {
+        let dir = tempdir().unwrap();
+        let engine = ChallengeEngine::new(dir.path());
+        let packs = engine.list_available();
+        assert_eq!(packs.len(), 5);
     }
 }

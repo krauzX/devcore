@@ -176,7 +176,7 @@ fn render_deadlines_list(frame: &mut Frame, area: Rect, app: &App) {
             };
 
             let prefix = if priority.is_empty() {
-                format!("     ")
+                "     ".to_string()
             } else {
                 format!("[{:<3}]", priority)
             };
