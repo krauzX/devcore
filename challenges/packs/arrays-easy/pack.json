@@ -1,0 +1,79 @@
+{
+  "id": "arrays-easy",
+  "name": "Array Fundamentals",
+  "category": "Arrays",
+  "difficulty": "Easy",
+  "problems": [
+    {
+      "id": "two-sum",
+      "name": "Two Sum",
+      "description": "Given an array of integers `nums` and an integer `target`, return the indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nThe answer can be returned in any order.\n\n# Examples\n\n```\ntwo_sum(&[2, 7, 11, 15], 9) -> (0, 1)\ntwo_sum(&[3, 2, 4], 6) -> (1, 2)\ntwo_sum(&[3, 3], 6) -> (0, 1)\n```",
+      "difficulty": "Easy",
+      "hints": [
+        "A brute force approach checks every pair — O(n^2). Can you do better?",
+        "Use a hash map to store each value's index as you iterate.",
+        "For each element, check if `target - current` is already in the map."
+      ],
+      "test_cases": [
+        {
+          "input": "nums = [2,7,11,15], target = 9",
+          "expected": "(0, 1)",
+          "description": "Basic case: 2 + 7 = 9"
+        },
+        {
+          "input": "nums = [3,2,4], target = 6",
+          "expected": "(1, 2)",
+          "description": "3 is not the answer (3+3 would reuse the same element)"
+        },
+        {
+          "input": "nums = [3,3], target = 6",
+          "expected": "(0, 1)",
+          "description": "Duplicate values at different indices"
+        }
+      ],
+      "skeleton": "use std::collections::HashMap;\n\npub fn two_sum(nums: &[i32], target: i32) -> (usize, usize) {\n    // TODO: use a HashMap to store each value's index as you iterate.\n    // For each element, check if (target - current) is already in the map.\n    todo!()\n}\n",
+      "solution": "use std::collections::HashMap;\n\npub fn two_sum(nums: &[i32], target: i32) -> (usize, usize) {\n    let mut map: HashMap<i32, usize> = HashMap::new();\n    for (i, &num) in nums.iter().enumerate() {\n        if let Some(&j) = map.get(&(target - num)) {\n            return (j, i);\n        }\n        map.insert(num, i);\n    }\n    (0, 0)\n}\n",
+      "category": "Arrays",
+      "tags": [
+        "hash-map",
+        "two-pointer"
+      ]
+    },
+    {
+      "id": "max-subarray",
+      "name": "Maximum Subarray",
+      "description": "Given an integer array `nums`, find the subarray with the largest sum, and return its sum.\n\nA subarray is a contiguous non-empty sequence of elements within an array.\n\n# Examples\n\n```\nmax_subarray(&[-2, 1, -3, 4, -1, 2, 1, -5, 4]) -> 6\n// The subarray [4, -1, 2, 1] has the largest sum = 6\n\nmax_subarray(&[1]) -> 1\n\nmax_subarray(&[5, 4, -1, 7, 8]) -> 23\n```",
+      "difficulty": "Easy",
+      "hints": [
+        "This is Kadane's algorithm — keep track of the running sum.",
+        "If the running sum drops below 0, reset it to the current element.",
+        "Maintain a global maximum that tracks the best sum seen so far."
+      ],
+      "test_cases": [
+        {
+          "input": "nums = [-2,1,-3,4,-1,2,1,-5,4]",
+          "expected": "6",
+          "description": "Subarray [4,-1,2,1] has the largest sum"
+        },
+        {
+          "input": "nums = [1]",
+          "expected": "1",
+          "description": "Single element"
+        },
+        {
+          "input": "nums = [5,4,-1,7,8]",
+          "expected": "23",
+          "description": "Entire array is the answer"
+        }
+      ],
+      "skeleton": "pub fn max_subarray(nums: &[i32]) -> i32 {\n    // TODO: track current_sum and global_max using Kadane's algorithm.\n    // If current_sum drops below 0, reset it to the current element.\n    todo!()\n}\n",
+      "solution": "pub fn max_subarray(nums: &[i32]) -> i32 {\n    let mut best = nums[0];\n    let mut current = nums[0];\n    for &num in &nums[1..] {\n        current = num.max(current + num);\n        best = best.max(current);\n    }\n    best\n}\n",
+      "category": "Arrays",
+      "tags": [
+        "dynamic-programming",
+        "kadane"
+      ]
+    }
+  ],
+  "installed": true
+}

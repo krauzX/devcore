@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "Student productivity toolkit for college students",
   "bin": {
-    "devcore": "bin/devcore"
+    "devcore": "bin/devcore.exe"
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.js"
